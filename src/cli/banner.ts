@@ -1,6 +1,11 @@
 /**
- * ShipMobile CLI — Premium Banner & Command Display
- * Renders actual PNG sprite inline (iTerm2/Kitty protocol) with ASCII fallback
+ * ShipMobile CLI — Banner & Command Display
+ *
+ * Style aligned with Claude Code:
+ * - Inline PNG sprite (iTerm2/Kitty) with ASCII fallback
+ * - Clean semantic colors, aggressive dimming for hierarchy
+ * - Unicode figures, no gratuitous emoji
+ * - Compact, dense info display
  */
 
 import chalk from 'chalk';
@@ -9,49 +14,30 @@ import boxen from 'boxen';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { figures, colors, divider } from './theme.js';
 
-// Gradients
-const shipGradient = gradient(['#0066ff', '#00d4ff', '#6366f1']);
-const accentGradient = gradient(['#ff6b6b', '#ee5a24', '#ff9f43']);
+// Brand gradient
+const shipGradient = gradient(['#0077b6', '#00b4d8', '#90e0ef']);
 
-// === INLINE IMAGE RENDERING ===
+// ═══════════════════════════════════════════════════════════════
+// INLINE IMAGE RENDERING
+// ═══════════════════════════════════════════════════════════════
 
-/**
- * Detect if the terminal supports inline images.
- * - iTerm2: ITERM_SESSION_ID or TERM_PROGRAM=iTerm.app
- * - Kitty: TERM=xterm-kitty
- * - WezTerm: TERM_PROGRAM=WezTerm
- */
 function detectImageProtocol(): 'iterm' | 'kitty' | null {
   const env = process.env;
-
-  if (env.TERM_PROGRAM === 'iTerm.app' || env.ITERM_SESSION_ID) {
-    return 'iterm';
-  }
-  if (env.TERM === 'xterm-kitty') {
-    return 'kitty';
-  }
-  if (env.TERM_PROGRAM === 'WezTerm') {
-    return 'iterm'; // WezTerm supports iTerm2 protocol
-  }
+  if (env.TERM_PROGRAM === 'iTerm.app' || env.ITERM_SESSION_ID) return 'iterm';
+  if (env.TERM === 'xterm-kitty') return 'kitty';
+  if (env.TERM_PROGRAM === 'WezTerm') return 'iterm';
   return null;
 }
 
-/**
- * Render a PNG inline using iTerm2 Inline Images Protocol.
- * ESC ] 1337 ; File=[params] : base64data BEL
- */
-function renderItermImage(pngData: Buffer, widthCells: number = 32): string {
+function renderItermImage(pngData: Buffer, widthCells = 24): string {
   const b64 = pngData.toString('base64');
   return `\x1b]1337;File=inline=1;width=${widthCells};preserveAspectRatio=1:${b64}\x07`;
 }
 
-/**
- * Render a PNG inline using Kitty Graphics Protocol.
- */
-function renderKittyImage(pngData: Buffer, widthCells: number = 32): string {
+function renderKittyImage(pngData: Buffer, widthCells = 24): string {
   const b64 = pngData.toString('base64');
-  // Kitty uses chunked transfer for large images
   const chunks: string[] = [];
   const chunkSize = 4096;
   for (let i = 0; i < b64.length; i += chunkSize) {
@@ -66,87 +52,71 @@ function renderKittyImage(pngData: Buffer, widthCells: number = 32): string {
   return chunks.join('');
 }
 
-/**
- * Try to load and render the sprite PNG inline.
- * Returns the escape sequence string, or null if not supported.
- */
 function tryRenderSprite(): string | null {
   const protocol = detectImageProtocol();
   if (!protocol) return null;
 
   try {
-    // Resolve sprite path relative to built output
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    // Sprite is at: <project>/assets/sailor-sprite-transparent.png
     const spritePath = join(__dirname, '..', 'assets', 'sailor-sprite-transparent.png');
     const pngData = readFileSync(spritePath);
-
-    if (protocol === 'kitty') {
-      return renderKittyImage(pngData, 24);
-    }
-    return renderItermImage(pngData, 24);
+    return protocol === 'kitty'
+      ? renderKittyImage(pngData, 20)
+      : renderItermImage(pngData, 20);
   } catch {
     return null;
   }
 }
 
-// === ASCII FALLBACK ===
+// ═══════════════════════════════════════════════════════════════
+// ASCII LOBSTER (fallback when no inline image support)
+// ═══════════════════════════════════════════════════════════════
 
 export function getLobsterAscii(): string {
-  const K = chalk.hex('#1a1a2e');
-  const B = chalk.hex('#1e3a6e');
-  const b = chalk.hex('#3b7dd8');
-  const R = chalk.hex('#e63946');
-  const r = chalk.hex('#a81c2b');
-
-  const _ = '  ';
-  const kk = K('██');
-  const bb = B('██');
-  const Bb = b('██');
-  const rr = R('██');
-  const dr = r('██');
+  // Larry the Lobster — colored with semantic approach
+  const R  = chalk.hex('#e63946'); // body red
+  const Rd = chalk.hex('#a81c2b'); // darker red (claws)
+  const K  = chalk.hex('#2b2d42'); // outline dark
+  const B  = chalk.hex('#1e3a6e'); // hat dark
+  const Bl = chalk.hex('#3b7dd8'); // hat light
 
   const rows = [
-    `${_}${_}${_}${_}${kk}${kk}${kk}${kk}${kk}${_}${_}${_}${_}${_}`,
-    `${_}${_}${_}${kk}${bb}${bb}${bb}${bb}${bb}${kk}${_}${_}${_}${_}`,
-    `${_}${kk}${kk}${bb}${bb}${bb}${Bb}${bb}${bb}${bb}${kk}${kk}${_}${_}`,
-    `${kk}${kk}${bb}${bb}${bb}${bb}${Bb}${Bb}${bb}${bb}${bb}${kk}${kk}${_}`,
-    `${kk}${kk}${kk}${kk}${kk}${kk}${kk}${kk}${kk}${kk}${kk}${kk}${kk}${_}`,
-    `${_}${kk}${rr}${rr}${rr}${rr}${rr}${rr}${rr}${rr}${rr}${kk}${_}${_}`,
-    `${_}${kk}${rr}${rr}${kk}${rr}${rr}${rr}${kk}${rr}${rr}${kk}${_}${_}`,
-    `${kk}${dr}${kk}${rr}${kk}${kk}${rr}${kk}${kk}${rr}${kk}${dr}${kk}${_}`,
-    `${kk}${dr}${kk}${rr}${rr}${rr}${rr}${rr}${rr}${rr}${kk}${dr}${kk}${_}`,
-    `${_}${kk}${rr}${rr}${rr}${rr}${rr}${rr}${rr}${rr}${rr}${kk}${_}${_}`,
-    `${_}${kk}${rr}${kk}${rr}${rr}${rr}${rr}${rr}${kk}${rr}${kk}${_}${_}`,
-    `${_}${kk}${kk}${kk}${rr}${rr}${_}${rr}${rr}${kk}${kk}${kk}${_}${_}`,
-    `${_}${_}${_}${kk}${kk}${_}${_}${_}${kk}${kk}${_}${_}${_}${_}`,
+    `     ${K('▄▄▄▄▄▄▄▄▄')}          `,
+    `    ${K('█')}${B('▓▓▓▓▓▓▓▓▓')}${K('█')}         `,
+    `  ${K('██')}${B('▓▓▓')}${Bl('▒')}${B('▓▓▓▓')}${K('██')}        `,
+    `  ${K('██')}${B('▓▓▓')}${Bl('▒▒')}${B('▓▓▓')}${K('██')}        `,
+    `  ${K('█████████████')}        `,
+    `   ${K('█')}${R('▓▓▓▓▓▓▓▓▓')}${K('█')}         `,
+    `   ${K('█')}${R('▓▓')}${K('█')}${R('▓▓▓')}${K('█')}${R('▓▓')}${K('█')}         `,
+    ` ${Rd('▓')}${K('█')}${R('▓▓')}${K('██')}${R('▓')}${K('██')}${R('▓▓')}${K('█')}${Rd('▓')}        `,
+    ` ${Rd('▓')}${K('█')}${R('▓▓▓▓▓▓▓▓▓')}${K('█')}${Rd('▓')}        `,
+    `   ${K('█')}${R('▓▓▓▓▓▓▓▓▓')}${K('█')}         `,
+    `   ${K('█')}${R('▓')}${K('█')}${R('▓▓▓▓▓')}${K('█')}${R('▓')}${K('█')}         `,
+    `   ${K('███')}${R('▓▓')} ${R('▓▓')}${K('███')}         `,
+    `      ${K('██')}   ${K('██')}            `,
   ];
 
-  return rows.map(row => '    ' + row).join('\n');
+  return rows.map(row => '  ' + row).join('\n');
 }
 
-// === TITLE ART ===
+// ═══════════════════════════════════════════════════════════════
+// TITLE
+// ═══════════════════════════════════════════════════════════════
 
-export function getTitleArt(): string {
-  const raw = [
-    '  ███████╗██╗  ██╗██╗██████╗ ███╗   ███╗ ██████╗ ██████╗ ██╗██╗     ███████╗',
-    '  ██╔════╝██║  ██║██║██╔══██╗████╗ ████║██╔═══██╗██╔══██╗██║██║     ██╔════╝',
-    '  ███████╗███████║██║██████╔╝██╔████╔██║██║   ██║██████╔╝██║██║     █████╗  ',
-    '  ╚════██║██╔══██║██║██╔═══╝ ██║╚██╔╝██║██║   ██║██╔══██╗██║██║     ██╔══╝  ',
-    '  ███████║██║  ██║██║██║     ██║ ╚═╝ ██║╚██████╔╝██████╔╝██║███████╗███████╗',
-    '  ╚══════╝╚═╝  ╚═╝╚═╝╚═╝     ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═╝╚══════╝╚══════╝',
-  ];
-  return raw.map(line => shipGradient(line)).join('\n');
+/** Compact gradient title — no massive figlet, just bold gradient text */
+function renderTitle(version: string): string {
+  const title = shipGradient('ShipMobile');
+  const ver = colors.dim(`v${version}`);
+  return `  ${title} ${ver}`;
 }
 
-const TAGLINE = 'Your agent can build the app. ShipMobile ships it.';
+const TAGLINE = 'Ship React Native apps to the stores.';
 
-// === MAIN DISPLAY ===
+// ═══════════════════════════════════════════════════════════════
+// MAIN DISPLAY
+// ═══════════════════════════════════════════════════════════════
 
-/**
- * Render the sprite — tries real PNG inline first, falls back to ASCII blocks.
- */
 function renderSprite(): void {
   const inlineImage = tryRenderSprite();
   if (inlineImage) {
@@ -156,86 +126,82 @@ function renderSprite(): void {
   }
 }
 
-// Full startup banner (bare `shipmobile` command)
-export function printCommandList(version: string = '0.1.0'): void {
+/**
+ * Full startup banner — shown on bare `shipmobile` command.
+ * Dense two-column layout, dimmed secondary info, keyboard hints.
+ */
+export function printCommandList(version = '0.1.0'): void {
   console.log();
   renderSprite();
   console.log();
-  console.log(getTitleArt());
-  console.log();
-  console.log('  ' + chalk.dim(TAGLINE));
-  console.log('  ' + chalk.dim(`v${version}`) + chalk.dim(' · ') + chalk.cyan.dim('https://github.com/ACRLABSDEV/shipmobile'));
+  console.log(renderTitle(version));
+  console.log(`  ${colors.dim(TAGLINE)}`);
+  console.log(`  ${divider(52)}`);
   console.log();
 
-  const commands: [string, string, string, boolean][] = [
-    ['🔐', 'login',    'Authenticate with Apple, Expo & Google Play',  true],
-    ['🔍', 'init',     'Initialize project for mobile deployment',     true],
-    ['🩺', 'doctor',   'Run project health checks',                    true],
-    ['📊', 'audit',    'Static analysis for store readiness',          false],
-    ['🖼️ ', 'assets',   'Validate and process app assets',              false],
-    ['📝', 'prepare',  'Generate app store metadata',                  false],
-    ['🔨', 'build',    'Trigger cloud build via EAS',                  false],
-    ['📡', 'status',   'Check build progress in real-time',            false],
-    ['📱', 'preview',  'Generate preview links + QR codes',            false],
-    ['🚀', 'submit',   'Submit to App Store / Play Store',             false],
-    ['🤖', 'mcp',      'Start MCP server for AI agents',               true],
+  // Commands — clean columns, no emoji, status-colored
+  const commands: [string, string, boolean][] = [
+    ['login',    'Authenticate with Expo, Apple & Google',    true],
+    ['init',     'Detect project and create config',          true],
+    ['doctor',   'Run health checks (23 checks)',             true],
+    ['audit',    'Static analysis for store readiness',       true],
+    ['assets',   'Process icons, splash, screenshots',        true],
+    ['prepare',  'Generate store metadata & privacy policy',  true],
+    ['build',    'Trigger cloud build via EAS',               true],
+    ['status',   'Check build progress',                      true],
+    ['preview',  'Preview links + QR codes',                  true],
+    ['submit',   'Submit to App Store / Play Store',          true],
+    ['reset',    'Clear local config',                        true],
   ];
 
-  const maxName = Math.max(...commands.map(c => c[1].length));
+  const maxName = Math.max(...commands.map(c => c[0].length));
 
-  for (const [icon, name, desc, ready] of commands) {
+  for (const [name, desc, ready] of commands) {
     const padded = name.padEnd(maxName + 2);
     if (ready) {
-      console.log(`  ${icon} ${chalk.cyan.bold(padded)} ${chalk.white(desc)}`);
+      console.log(`  ${colors.brand(padded)}${colors.dim(desc)}`);
     } else {
-      console.log(`  ${icon} ${chalk.hex('#666')(padded)} ${chalk.hex('#555')(desc)}  ${chalk.hex('#444')('soon')}`);
+      console.log(`  ${colors.dim(padded + desc + '  (soon)')}`);
     }
   }
 
   console.log();
+  console.log(`  ${colors.dim('Also available as MCP server:')} ${colors.suggestion('shipmobile-mcp')}`);
+  console.log();
 
   const footer = boxen(
-    chalk.dim('Usage: ') + chalk.white('shipmobile <command> [options]') + '\n' +
-    chalk.dim('Help:  ') + chalk.white('shipmobile <command> --help'),
+    colors.dim('Usage  ') + chalk.white('shipmobile <command> [options]') + '\n' +
+    colors.dim('Help   ') + chalk.white('shipmobile <command> --help'),
     {
       padding: { top: 0, bottom: 0, left: 1, right: 1 },
       borderStyle: 'round',
       borderColor: 'cyan',
       dimBorder: true,
-    }
+    },
   );
   console.log(footer.split('\n').map(l => '  ' + l).join('\n'));
   console.log();
 }
 
-// Banner for --help
-export function printBanner(version: string = '0.1.0'): void {
+/** Short banner for --help */
+export function printBanner(version = '0.1.0'): void {
   console.log();
   renderSprite();
   console.log();
-  console.log(getTitleArt());
-  console.log();
-  console.log('  ' + chalk.dim(TAGLINE));
-  console.log('  ' + chalk.dim(`v${version}`));
+  console.log(renderTitle(version));
+  console.log(`  ${colors.dim(TAGLINE)}`);
   console.log();
 }
 
-// Compact header for subcommands
+/** Compact header for subcommands */
 export function printHeader(command: string): void {
   console.log();
-  console.log(accentGradient(`  📱 ShipMobile`) + chalk.dim(` — ${command}`));
-  console.log(chalk.dim('  ' + '─'.repeat(50)));
+  console.log(`  ${colors.brandBold('ShipMobile')} ${colors.dim(figures.dot)} ${colors.dim(command)}`);
+  console.log(`  ${divider(52)}`);
   console.log();
 }
 
-// Plain text for MCP/logs
+/** Plain text for MCP/logs (no ANSI) */
 export const BANNER_PLAIN = `
-  ███████╗██╗  ██╗██╗██████╗ ███╗   ███╗ ██████╗ ██████╗ ██╗██╗     ███████╗
-  ██╔════╝██║  ██║██║██╔══██╗████╗ ████║██╔═══██╗██╔══██╗██║██║     ██╔════╝
-  ███████╗███████║██║██████╔╝██╔████╔██║██║   ██║██████╔╝██║██║     █████╗
-  ╚════██║██╔══██║██║██╔═══╝ ██║╚██╔╝██║██║   ██║██╔══██╗██║██║     ██╔══╝
-  ███████║██║  ██║██║██║     ██║ ╚═╝ ██║╚██████╔╝██████╔╝██║███████╗███████╗
-  ╚══════╝╚═╝  ╚═╝╚═╝╚═╝     ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═╝╚══════╝╚══════╝
-
-  Your agent can build the app. ShipMobile ships it.
+  ShipMobile — Ship React Native apps to the stores.
 `;
