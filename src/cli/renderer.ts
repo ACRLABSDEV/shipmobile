@@ -1,11 +1,14 @@
 /**
  * CLI Renderer — renders Result<T> for terminal output
  *
- * Style aligned with Claude Code:
- * - Unicode figures (✔ ✘ ⚠ ℹ) not emoji (✅ ❌ ⚠️ 💡)
+ * Claude Code-aligned styling:
+ * - Unicode figures (✔ ✘ ⚠ ℹ) — no emoji
  * - dimColor aggressively for secondary info
- * - Semantic colors from theme tokens
- * - Dense layouts, minimal whitespace
+ * - Passing checks are dimmed (don't shout about what's fine)
+ * - Failed checks are bold/colored (draw attention to problems)
+ * - Category headers with counts
+ * - Indentation hierarchy: category → item → detail (each level dimmer)
+ * - Thin borders, dot separators between sections
  */
 
 import type { Result } from '../utils/result.js';
@@ -15,7 +18,10 @@ import type { DoctorResult } from '../core/doctor.js';
 import type { AuditResult } from '../core/audit/index.js';
 import type { AuditFinding } from '../analyzers/types.js';
 import { generateQRCode } from '../core/preview.js';
-import { colors, figures, divider, heading, status, hint, cmd, progressBar, duration } from './theme.js';
+import {
+  colors, figures, divider, heading, status, statusDim, hint, cmd,
+  progressBar, duration, dotLine, categoryHeading, thinBox, hyperlink,
+} from './theme.js';
 
 // ─── Generic ─────────────────────────────────────────────────────────
 
@@ -44,15 +50,15 @@ export function renderLoginResult(result: Result<LoginResult>, provider: string)
     return;
   }
   const { details } = result.data;
-  if (details.expo) console.log(`  ${status('pass', `Expo: @${details.expo.username} (${details.expo.plan || 'free'})`)}`);
-  if (details.apple) console.log(`  ${status('pass', `Apple: ${details.apple.teamName}`)}`);
-  if (details.google) console.log(`  ${status('pass', `Google Play: ${details.google.projectId}`)}`);
+  if (details.expo) console.log(`  ${status('pass', `Expo  ${colors.dim(`@${details.expo.username}`)} ${colors.dim(details.expo.plan || 'free')}`)}`);
+  if (details.apple) console.log(`  ${status('pass', `Apple  ${colors.dim(details.apple.teamName)}`)}`);
+  if (details.google) console.log(`  ${status('pass', `Google Play  ${colors.dim(details.google.projectId)}`)}`);
 }
 
 export function renderLoginStatus(result: Result<LoginResult>): void {
   console.log();
   console.log(`  ${heading('Connection Status')}`);
-  console.log(`  ${divider(40)}`);
+  console.log(`  ${dotLine(40)}`);
   console.log();
 
   if (!result.ok) {
@@ -62,9 +68,24 @@ export function renderLoginStatus(result: Result<LoginResult>): void {
 
   const { authenticated, details, issues } = result.data;
 
-  console.log(`  ${authenticated.expo ? status('pass', `Expo/EAS: @${details.expo?.username || 'connected'}`) : status('fail', 'Expo/EAS: not connected')}`);
-  console.log(`  ${authenticated.apple ? status('pass', `Apple: ${details.apple?.teamName || 'connected'}`) : status('fail', 'Apple: not connected')}`);
-  console.log(`  ${authenticated.google ? status('pass', `Google Play: ${details.google?.projectId || 'connected'}`) : status('fail', 'Google Play: not connected')}`);
+  // Connected services: bright. Disconnected: red with action hint.
+  if (authenticated.expo) {
+    console.log(`  ${statusDim('pass', `Expo/EAS  ${colors.dim(`@${details.expo?.username || 'connected'}`)}`)}`);
+  } else {
+    console.log(`  ${status('fail', 'Expo/EAS  not connected')}`);
+  }
+
+  if (authenticated.apple) {
+    console.log(`  ${statusDim('pass', `Apple  ${colors.dim(details.apple?.teamName || 'connected')}`)}`);
+  } else {
+    console.log(`  ${status('fail', 'Apple  not connected')}`);
+  }
+
+  if (authenticated.google) {
+    console.log(`  ${statusDim('pass', `Google Play  ${colors.dim(details.google?.projectId || 'connected')}`)}`);
+  } else {
+    console.log(`  ${status('fail', 'Google Play  not connected')}`);
+  }
 
   if (issues.length > 0) {
     console.log();
@@ -90,15 +111,17 @@ export function renderInitResult(result: Result<InitResult>): void {
     'react-native-cli': 'React Native CLI',
   };
 
-  console.log(`  ${colors.bold('Detected')}  ${colors.brand(workflowLabel[project.workflow] || project.workflow)}${project.sdkVersion ? colors.dim(` SDK ${project.sdkVersion}`) : ''}`);
-  console.log(`  ${colors.bold('Project')}   ${project.name}`);
-  console.log(`  ${colors.bold('Bundle')}    ${colors.dim(project.bundleId)}`);
-  console.log(`  ${colors.bold('Version')}   ${colors.dim(project.version)}`);
-  console.log(`  ${colors.bold('Platforms')} ${colors.dim(project.platforms.join(', '))}`);
+  // Dense key-value pairs with aligned labels
+  const label = (text: string) => colors.dim(text.padEnd(12));
+  console.log(`  ${label('Detected')}${colors.brand(workflowLabel[project.workflow] || project.workflow)}${project.sdkVersion ? colors.dim(` SDK ${project.sdkVersion}`) : ''}`);
+  console.log(`  ${label('Project')}${project.name}`);
+  console.log(`  ${label('Bundle')}${colors.dim(project.bundleId)}`);
+  console.log(`  ${label('Version')}${colors.dim(project.version)}`);
+  console.log(`  ${label('Platforms')}${colors.dim(project.platforms.join(', '))}`);
 
   if (generated.length > 0) {
     console.log();
-    for (const f of generated) console.log(`  ${status('pass', f)}`);
+    for (const f of generated) console.log(`  ${statusDim('pass', f)}`);
   }
 
   if (issues.length > 0) {
@@ -107,7 +130,7 @@ export function renderInitResult(result: Result<InitResult>): void {
   }
 
   console.log();
-  console.log(`  ${status('pass', `Configured. Next: ${cmd('shipmobile doctor')}`)}`);
+  console.log(`  ${status('pass', `Configured`)} ${colors.dim(`${figures.arrowRight} next: ${cmd('shipmobile doctor')}`)}`);
   console.log();
 }
 
@@ -121,8 +144,6 @@ export function renderDoctorResult(result: Result<DoctorResult>): void {
 
   const { passed, warnings, critical, checks } = result.data;
 
-  console.log(`  Running ${checks.length} checks${colors.dim(figures.ellipsis)}\n`);
-
   const categories = ['structure', 'config', 'assets', 'accounts', 'build', 'dependencies', 'platform'] as const;
   const labels: Record<string, string> = {
     structure: 'Project Structure', config: 'Configuration', assets: 'Assets',
@@ -133,33 +154,53 @@ export function renderDoctorResult(result: Result<DoctorResult>): void {
     const catChecks = checks.filter((c) => c.category === cat);
     if (catChecks.length === 0) continue;
 
-    console.log(`  ${colors.bold(labels[cat] || cat)}`);
+    const failCount = catChecks.filter(c => c.status === 'failed').length;
+    const warnCount = catChecks.filter(c => c.status !== 'passed' && c.severity !== 'critical').length;
+    const issueCount = failCount + warnCount;
+
+    // Category header with issue count
+    const countSuffix = issueCount > 0
+      ? ` ${colors.dim('·')} ${issueCount === failCount ? colors.error(`${issueCount} issues`) : colors.warning(`${issueCount} issues`)}`
+      : '';
+    console.log(`  ${categoryHeading(labels[cat] || cat)}${countSuffix}`);
+
     for (const c of catChecks) {
-      const type = c.status === 'passed' ? 'pass' : c.severity === 'critical' ? 'fail' : 'warn';
-      console.log(`    ${status(type, c.message)}`);
-      if (c.status === 'failed' && c.suggestion) {
-        console.log(`      ${hint(c.suggestion)}`);
+      if (c.status === 'passed') {
+        // Passing checks: dimmed entirely — don't shout about what's fine
+        console.log(`    ${statusDim('pass', c.message)}`);
+      } else {
+        // Failed/warned: bright icon + white text
+        const type = c.severity === 'critical' ? 'fail' : 'warn';
+        console.log(`    ${status(type, c.message)}`);
+        if (c.suggestion) {
+          console.log(`      ${hint(c.suggestion)}`);
+        }
       }
     }
     console.log();
   }
 
-  console.log(`  ${divider(40)}`);
+  // Summary
+  console.log(`  ${dotLine(40)}`);
   console.log();
-  console.log(`  ${status('pass', `${passed} passed`)}`);
-  if (warnings.length > 0) console.log(`  ${status('warn', `${warnings.length} warnings`)}`);
-  if (critical.length > 0) console.log(`  ${status('fail', `${critical.length} critical`)}`);
+
+  const parts: string[] = [];
+  parts.push(colors.dim(`${passed} passed`));
+  if (warnings.length > 0) parts.push(colors.warning(`${warnings.length} warnings`));
+  if (critical.length > 0) parts.push(colors.error(`${critical.length} critical`));
+  console.log(`  ${parts.join(colors.dim(` ${figures.dot} `))}`);
 
   if (critical.length > 0) {
-    console.log(`\n  ${colors.error('Critical issues must be fixed before building')}`);
+    console.log(`  ${colors.error('Fix critical issues before building')}`);
   } else if (warnings.length > 0) {
-    console.log(`\n  ${colors.warning('Address warnings for best results')}`);
+    console.log(`  ${colors.dim('Address warnings for best results')}`);
   } else {
-    console.log(`\n  ${colors.success('All clear — ready to build')}`);
+    console.log(`  ${colors.success('All clear — ready to build')}`);
   }
 
   if (warnings.length + critical.length > 0) {
-    console.log(`\n  ${hint(`Run ${cmd('shipmobile doctor --fix')} to auto-fix`)}`);
+    console.log();
+    console.log(`  ${hint(`Run ${cmd('shipmobile doctor --fix')} to auto-fix`)}`);
   }
   console.log();
 }
@@ -178,53 +219,57 @@ export function renderAuditResult(result: Result<AuditResult & { _fixedCount?: n
   const { score, critical, warnings, info, metrics, findings } = data;
 
   console.log();
-  console.log(`  ${heading('Audit Report')}`);
-  console.log(`  ${divider(40)}`);
-  console.log();
 
-  // Score with color
+  // Score — prominent with color-coded box
   const scoreColor = score >= 80 ? colors.success : score >= 50 ? colors.warning : colors.error;
-  console.log(`  Score  ${scoreColor(colors.bold(`${score}/100`))}`);
+  const scoreLabel = score >= 80 ? 'Excellent' : score >= 50 ? 'Needs Work' : 'Critical';
+  const scoreBox = thinBox(
+    `${scoreColor(colors.bold(`${score}/100`))}  ${colors.dim(scoreLabel)}`,
+    { title: 'Audit Score', borderColor: scoreColor },
+  );
+  console.log(scoreBox.split('\n').map(l => '  ' + l).join('\n'));
   console.log();
 
-  // Summary line
+  // Summary counts on one line
   const passedCount = metrics.rulesRun - new Set(findings.map((f: AuditFinding) => f.ruleId)).size;
-  console.log(`  ${status('pass', `${passedCount} rules passed`)}`);
-  if (warnings.length > 0) console.log(`  ${status('warn', `${warnings.length} warnings`)}`);
-  if (critical.length > 0) console.log(`  ${status('fail', `${critical.length} critical`)}`);
-  if (info.length > 0) console.log(`  ${colors.dim(`  ${figures.info} ${info.length} suggestions`)}`);
+  const summaryParts: string[] = [];
+  summaryParts.push(colors.dim(`${passedCount} passed`));
+  if (warnings.length > 0) summaryParts.push(colors.warning(`${warnings.length} warnings`));
+  if (critical.length > 0) summaryParts.push(colors.error(`${critical.length} critical`));
+  if (info.length > 0) summaryParts.push(colors.dim(`${info.length} suggestions`));
+  console.log(`  ${summaryParts.join(colors.dim(` ${figures.dot} `))}`);
   console.log();
 
-  // Critical findings
+  // Critical findings — category grouped
   if (critical.length > 0) {
     console.log(`  ${colors.errorBold('Critical')}`);
-    renderFindingGroup(critical);
+    renderFindingGroup(critical, 2);
     console.log();
   }
 
-  // Warnings
+  // Warnings — category grouped
   if (warnings.length > 0) {
     console.log(`  ${colors.warningBold('Warnings')}`);
-    renderFindingGroup(warnings);
+    renderFindingGroup(warnings, 2);
     console.log();
   }
 
-  // Info
+  // Info — entirely dimmed
   if (info.length > 0) {
     console.log(`  ${colors.dim(colors.bold('Suggestions'))}`);
-    renderFindingGroup(info);
+    renderFindingGroup(info, 2);
     console.log();
   }
 
-  // Diff
+  // Diff from previous
   if (data._previous) {
     const diff = score - data._previous.score;
     const diffStr = diff > 0 ? colors.success(`+${diff}`) : diff < 0 ? colors.error(`${diff}`) : colors.dim('±0');
-    console.log(`  Diff  ${data._previous.score} ${figures.arrowRight} ${score} (${diffStr})`);
+    console.log(`  ${colors.dim('Diff')}  ${data._previous.score} ${figures.arrowRight} ${score} ${colors.dim('(')}${diffStr}${colors.dim(')')}`);
     console.log();
   }
 
-  // Auto-fix
+  // Auto-fix report
   if (data._fixedCount && data._fixedCount > 0) {
     console.log(`  ${status('pass', `Auto-fixed ${data._fixedCount} issues`)}`);
     console.log();
@@ -240,18 +285,20 @@ export function renderAuditResult(result: Result<AuditResult & { _fixedCount?: n
   console.log();
 }
 
-function renderFindingGroup(findings: AuditFinding[]): void {
+function renderFindingGroup(findings: AuditFinding[], baseIndent = 1): void {
+  const pad = '  '.repeat(baseIndent);
   const grouped = groupFindings(findings);
   for (const [, items] of grouped) {
     const first = items[0]!;
     const count = items.filter((f: AuditFinding) => f.file).length;
-    const msg = count > 1 ? `${first.message} (${count}×)` : first.message;
-    console.log(`    ${figures.pointerSmall} ${msg}`);
-    if (first.suggestion) console.log(`      ${colors.dim(first.suggestion)}`);
+    const msg = count > 1 ? `${first.message} ${colors.dim(`(${count}×`)}` + colors.dim(')') : first.message;
+    console.log(`${pad}${figures.pointerSmall} ${msg}`);
+    if (first.suggestion) console.log(`${pad}  ${colors.dim(first.suggestion)}`);
+    // File locations — deepest indent level, most dimmed
     const locs = items.filter((f: AuditFinding) => f.file).slice(0, 3);
     if (locs.length > 0) {
       const paths = locs.map((f: AuditFinding) => `${f.file}${f.line ? `:${f.line}` : ''}`).join(', ');
-      console.log(`      ${colors.dim(paths)}${items.length > 3 ? colors.dim(` +${items.length - 3}`) : ''}`);
+      console.log(`${pad}  ${colors.dim(paths)}${items.length > 3 ? colors.dim(` +${items.length - 3}`) : ''}`);
     }
   }
 }
@@ -279,50 +326,58 @@ export function renderAssetsResult(result: Result<import('../core/assets.js').As
   const data = result.data;
   console.log();
 
-  // Icon
+  // Icon — grouped under category
+  console.log(`  ${categoryHeading('Icons')}`);
   if (data.icon) {
     const iosCount = data.icon.generated.filter(g => g.platform === 'ios').length;
     const androidCount = data.icon.generated.filter(g => g.platform === 'android').length;
-    console.log(`  ${status('pass', `Icon: ${data.icon.width}×${data.icon.height} ${figures.arrowRight} ${iosCount} iOS + ${androidCount} Android sizes`)}`);
+    console.log(`    ${statusDim('pass', `Source ${colors.dim(`${data.icon.width}×${data.icon.height}`)} ${figures.arrowRight} ${colors.dim(`${iosCount} iOS + ${androidCount} Android`)}`)}`);
   } else {
-    console.log(`  ${status('fail', 'No app icon found')}`);
+    console.log(`    ${status('fail', 'No app icon found')}`);
   }
 
-  // Adaptive
   if (data.adaptiveIcon) {
-    console.log(`  ${status('pass', `Adaptive icon: ${data.adaptiveIcon.generated.length} files`)}`);
+    console.log(`    ${statusDim('pass', `Adaptive icon ${colors.dim(`${data.adaptiveIcon.generated.length} files`)}`)}`);
   }
+  console.log();
 
   // Splash
+  console.log(`  ${categoryHeading('Splash Screens')}`);
   if (data.splash.length > 0) {
     for (const s of data.splash) {
       if (s.valid) {
-        console.log(`  ${status('pass', `Splash ${s.platform}: ${s.width}×${s.height}`)}`);
+        console.log(`    ${statusDim('pass', `${s.platform} ${colors.dim(`${s.width}×${s.height}`)}`)}`);
       } else {
-        console.log(`  ${status('warn', `Splash ${s.platform}: ${s.width}×${s.height}`)}`);
-        for (const issue of s.issues) console.log(`    ${hint(issue)}`);
+        console.log(`    ${status('warn', `${s.platform} ${colors.dim(`${s.width}×${s.height}`)}`)}`);
+        for (const issue of s.issues) console.log(`      ${hint(issue)}`);
       }
     }
   } else {
-    console.log(`  ${status('fail', 'No splash screen found')}`);
+    console.log(`    ${status('fail', 'No splash screen found')}`);
   }
+  console.log();
 
   // Screenshots
-  for (const ss of data.screenshots) {
-    if (ss.found) {
-      console.log(`  ${status('pass', `${ss.label} (${ss.size})`)}`);
-    } else {
-      const type = ss.required ? 'fail' : 'warn';
-      console.log(`  ${status(type, `Missing: ${ss.label} (${ss.size})`)}${ss.required ? '' : colors.dim(' optional')}`);
+  if (data.screenshots.length > 0) {
+    const found = data.screenshots.filter(ss => ss.found).length;
+    const total = data.screenshots.length;
+    console.log(`  ${categoryHeading('Screenshots', found)} ${colors.dim(`of ${total}`)}`);
+    for (const ss of data.screenshots) {
+      if (ss.found) {
+        console.log(`    ${statusDim('pass', `${ss.label} ${colors.dim(ss.size)}`)}`);
+      } else {
+        const type = ss.required ? 'fail' : 'warn';
+        console.log(`    ${status(type, `${ss.label} ${colors.dim(ss.size)}`)}${ss.required ? '' : colors.dim(' optional')}`);
+      }
     }
+    console.log();
   }
 
   // Recommendations
   if (data.recommendations.length > 0) {
-    console.log();
     for (const r of data.recommendations) console.log(`  ${hint(r)}`);
+    console.log();
   }
-  console.log();
 }
 
 // ─── Build ───────────────────────────────────────────────────────────
@@ -339,7 +394,7 @@ export function renderBuildResult(result: Result<import('../core/build.js').Buil
   console.log();
 
   if (data.validated) {
-    console.log(`  ${status('pass', 'Pre-build validation passed')}`);
+    console.log(`  ${statusDim('pass', 'Pre-build validation passed')}`);
     for (const issue of data.validationIssues) {
       console.log(`    ${status('warn', issue)}`);
     }
@@ -350,10 +405,11 @@ export function renderBuildResult(result: Result<import('../core/build.js').Buil
     const type = build.status === 'errored' ? 'fail' : build.status === 'finished' ? 'pass' : 'info';
     const platform = build.platform === 'ios' ? 'iOS' : 'Android';
 
-    console.log(`  ${status(type, `${colors.bold(platform)} ${figures.dot} ${build.profile}`)}`);
-    console.log(`    Build  ${colors.brand(build.id)}`);
-    console.log(`    Status ${build.status}`);
-    if (build.estimatedTime) console.log(`    ETA    ${colors.dim(`~${Math.ceil(build.estimatedTime / 60)}min`)}`);
+    console.log(`  ${status(type, colors.bold(platform))}`);
+    console.log(`    ${colors.dim('Build')}    ${colors.brand(build.id)}`);
+    console.log(`    ${colors.dim('Profile')}  ${build.profile}`);
+    console.log(`    ${colors.dim('Status')}   ${build.status}`);
+    if (build.estimatedTime) console.log(`    ${colors.dim('ETA')}      ${colors.dim(`~${Math.ceil(build.estimatedTime / 60)}min`)}`);
     if (build.error) console.log(`    ${colors.error(build.error)}`);
     console.log();
   }
@@ -380,14 +436,14 @@ export function renderStatusResult(result: Result<import('../core/status.js').St
   // History mode
   if (data.history && data.history.length > 0) {
     console.log(`  ${heading('Build History')}`);
-    console.log(`  ${divider(40)}`);
+    console.log(`  ${dotLine(40)}`);
     console.log();
     for (const entry of data.history) {
       const type = entry.status === 'finished' ? 'pass' : entry.status === 'errored' ? 'fail' : 'info';
       const platform = entry.platform === 'ios' ? 'iOS' : 'Android';
       const date = new Date(entry.createdAt).toLocaleDateString();
       const dur = entry.duration ? ` ${duration(entry.duration * 1000)}` : '';
-      console.log(`  ${status(type, `${colors.bold(platform)} ${entry.profile} ${colors.dim(`${figures.dot} ${entry.status}${dur} ${figures.dot} ${date}`)}`)}`);
+      console.log(`  ${status(type, colors.bold(platform))} ${colors.dim(`${entry.profile} ${figures.dot} ${entry.status}${dur} ${figures.dot} ${date}`)}`);
       console.log(`    ${colors.dim(entry.id)}`);
     }
     console.log();
@@ -400,7 +456,7 @@ export function renderStatusResult(result: Result<import('../core/status.js').St
     const elapsed = duration(build.elapsedMs);
 
     if (build.isComplete) {
-      console.log(`  ${status('pass', `${colors.bold(platform)} Complete ${colors.dim(`(${elapsed})`)}`)} `);
+      console.log(`  ${status('pass', `${colors.bold(platform)} Complete`)} ${colors.dim(elapsed)}`);
       if (build.artifacts?.applicationArchiveUrl) {
         console.log(`    ${colors.dim(build.artifacts.applicationArchiveUrl)}`);
       }
@@ -408,9 +464,9 @@ export function renderStatusResult(result: Result<import('../core/status.js').St
       console.log(`  ${status('fail', `${colors.bold(platform)} ${build.phaseLabel}`)}`);
       if (build.error) console.log(`    ${colors.error(build.error)}`);
     } else {
-      const bar = progressBar(build.progress);
       const eta = build.estimatedRemaining ? `ETA ~${Math.ceil(build.estimatedRemaining / 60)}min` : '';
-      console.log(`  ${colors.brand(colors.bold(platform))} ${build.phaseLabel}  ${bar} ${build.progress}%`);
+      console.log(`  ${colors.brand(colors.bold(platform))} ${build.phaseLabel}`);
+      console.log(`    ${progressBar(build.progress)}`);
       console.log(`    ${colors.dim(`${elapsed}${eta ? ` ${figures.dot} ${eta}` : ''}`)}`);
     }
     console.log();
@@ -419,7 +475,7 @@ export function renderStatusResult(result: Result<import('../core/status.js').St
   // Logs
   if (data.logs && data.logs.length > 0) {
     console.log(`  ${heading('Build Logs')}`);
-    console.log(`  ${divider(40)}`);
+    console.log(`  ${dotLine(40)}`);
     for (const log of data.logs.slice(-20)) {
       console.log(`  ${colors.dim(log.timestamp)} ${log.message}`);
     }
@@ -444,25 +500,27 @@ export async function renderPreviewResult(result: Result<import('../core/preview
   const androidLinks = data.previews.filter(p => p.platform === 'android');
 
   if (iosLinks.length > 0) {
-    console.log(`  ${colors.bold('iOS')}`);
+    console.log(`  ${categoryHeading('iOS')}`);
     for (const link of iosLinks) {
       console.log(`    ${colors.dim(link.label)}`);
-      console.log(`    ${colors.brand(link.url)}`);
+      console.log(`    ${hyperlink(colors.brand(link.url), link.url)}`);
     }
     console.log();
   }
 
   if (androidLinks.length > 0) {
-    console.log(`  ${colors.bold('Android')}`);
+    console.log(`  ${categoryHeading('Android')}`);
     for (const link of androidLinks) {
       console.log(`    ${colors.dim(link.label)}`);
-      console.log(`    ${colors.brand(link.url)}`);
+      console.log(`    ${hyperlink(colors.brand(link.url), link.url)}`);
     }
     console.log();
   }
 
   // QR codes
   if (data.qrData.length > 0) {
+    console.log(`  ${dotLine(40)}`);
+    console.log();
     for (const url of data.qrData) {
       console.log(await generateQRCode(url));
       console.log(`  ${colors.dim('Scan to install')}`);
@@ -487,25 +545,29 @@ export function renderPrepareResult(result: Result<import('../core/prepare.js').
   const data = result.data;
   console.log();
 
-  // Dense key-value layout
+  // Dense key-value layout with aligned dim labels
   const meta = data.metadata;
-  console.log(`  ${colors.bold('App Name')}     ${meta.appName.value} ${colors.dim(`(${meta.appName.source})`)}`);
-  console.log(`  ${colors.bold('Subtitle')}     ${meta.subtitle.value || colors.dim('none')} ${colors.dim(`(${meta.subtitle.source})`)}`);
-  console.log(`  ${colors.bold('Category')}     ${meta.category.value} ${colors.dim(`(${meta.category.source})`)}`);
-  console.log(`  ${colors.bold('Age Rating')}   ${meta.ageRating.value}`);
-  console.log(`  ${colors.bold('Description')}  ${colors.dim(meta.shortDescription.value.slice(0, 50) + (meta.shortDescription.value.length > 50 ? figures.ellipsis : ''))}`);
-  console.log(`  ${colors.bold('Keywords')}     ${colors.dim(meta.keywords.value || 'none')}`);
+  const label = (text: string) => colors.dim(text.padEnd(14));
+  console.log(`  ${label('App Name')}${meta.appName.value} ${colors.dim(`(${meta.appName.source})`)}`);
+  console.log(`  ${label('Subtitle')}${meta.subtitle.value || colors.dim('none')} ${colors.dim(`(${meta.subtitle.source})`)}`);
+  console.log(`  ${label('Category')}${meta.category.value} ${colors.dim(`(${meta.category.source})`)}`);
+  console.log(`  ${label('Age Rating')}${meta.ageRating.value}`);
+  console.log(`  ${label('Description')}${colors.dim(meta.shortDescription.value.slice(0, 50) + (meta.shortDescription.value.length > 50 ? figures.ellipsis : ''))}`);
+  console.log(`  ${label('Keywords')}${colors.dim(meta.keywords.value || 'none')}`);
   console.log();
 
   // Privacy
   if (data.privacy.permissions.length > 0) {
-    console.log(`  ${colors.bold('Permissions')}  ${colors.dim(data.privacy.permissions.join(', '))}`);
-    console.log(`  ${status('pass', `Privacy policy ${figures.arrowRight} privacy-policy.html`)}`);
-    console.log(`  ${hint('Host at a public URL for your app listing')}`);
+    console.log(`  ${categoryHeading('Privacy')}`);
+    console.log(`    ${colors.dim('Permissions')}  ${colors.dim(data.privacy.permissions.join(', '))}`);
+    console.log(`    ${statusDim('pass', `Privacy policy ${figures.arrowRight} privacy-policy.html`)}`);
+    console.log(`    ${hint('Host at a public URL for your app listing')}`);
     console.log();
   }
 
   // Validation
+  console.log(`  ${dotLine(40)}`);
+  console.log();
   const errors = data.validation.filter(v => v.severity === 'error');
   const warns = data.validation.filter(v => v.severity === 'warning');
   if (errors.length > 0) {
@@ -515,11 +577,11 @@ export function renderPrepareResult(result: Result<import('../core/prepare.js').
     for (const w of warns) console.log(`  ${status('warn', `${w.field}: ${w.message}`)}`);
   }
   if (errors.length === 0 && warns.length === 0) {
-    console.log(`  ${status('pass', 'All validation checks passed')}`);
+    console.log(`  ${statusDim('pass', 'All validation checks passed')}`);
   }
   console.log();
 
-  console.log(`  ${status('pass', `Saved to ${colors.dim(data.savedTo)}`)}`);
+  console.log(`  ${statusDim('pass', `Saved to ${colors.dim(data.savedTo)}`)}`);
   console.log(`  ${hint(`Next: ${cmd('shipmobile build')}`)}`);
   console.log();
 }
@@ -537,9 +599,13 @@ export function renderSubmitResult(result: Result<import('../core/submit.js').Su
 
   // Preflight
   if (data.preflight.length > 0) {
-    console.log(`  ${heading('Pre-flight')}`);
+    console.log(`  ${categoryHeading('Pre-flight')}`);
     for (const check of data.preflight) {
-      console.log(`    ${status(check.passed ? 'pass' : 'fail', check.message)}`);
+      if (check.passed) {
+        console.log(`    ${statusDim('pass', check.message)}`);
+      } else {
+        console.log(`    ${status('fail', check.message)}`);
+      }
     }
     console.log();
   }
@@ -550,18 +616,20 @@ export function renderSubmitResult(result: Result<import('../core/submit.js').Su
   }
 
   if (data.ios) {
-    console.log(`  ${heading('App Store Connect')}`);
-    console.log(`    Status   ${colors.success(data.ios.status)}`);
-    console.log(`    Version  ${data.ios.version}`);
-    if (data.ios.reviewUrl) console.log(`    Review   ${colors.brand(data.ios.reviewUrl)}`);
+    console.log(`  ${categoryHeading('App Store Connect')}`);
+    const label = (text: string) => colors.dim(text.padEnd(10));
+    console.log(`    ${label('Status')}${colors.success(data.ios.status)}`);
+    console.log(`    ${label('Version')}${data.ios.version}`);
+    if (data.ios.reviewUrl) console.log(`    ${label('Review')}${hyperlink(colors.brand(data.ios.reviewUrl), data.ios.reviewUrl)}`);
     console.log();
   }
 
   if (data.android) {
-    console.log(`  ${heading('Google Play')}`);
-    console.log(`    Status   ${colors.success(data.android.status)}`);
-    console.log(`    Track    ${data.android.track}`);
-    console.log(`    Version  ${data.android.version}`);
+    console.log(`  ${categoryHeading('Google Play')}`);
+    const label = (text: string) => colors.dim(text.padEnd(10));
+    console.log(`    ${label('Status')}${colors.success(data.android.status)}`);
+    console.log(`    ${label('Track')}${data.android.track}`);
+    console.log(`    ${label('Version')}${data.android.version}`);
     console.log();
   }
 

@@ -2,19 +2,18 @@
  * ShipMobile CLI — Banner & Command Display
  *
  * Inline PNG sprite (iTerm2/Kitty) with ASCII lobster fallback.
- * Original block-letter title art with gradient.
- * Claude Code-aligned styling: semantic colors, dimColor hierarchy, Unicode figures.
+ * Original block-letter title art with ocean gradient.
+ * Claude Code-aligned: semantic colors, dimColor hierarchy, thin borders, no emoji.
  */
 
 import chalk from 'chalk';
 import gradient from 'gradient-string';
-import boxen from 'boxen';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { figures, colors, divider } from './theme.js';
+import { figures, colors, divider, thinBox, dotLine, hyperlink } from './theme.js';
 
-// Brand gradient
+// Brand gradient (ocean)
 const shipGradient = gradient(['#0077b6', '#00b4d8', '#90e0ef']);
 
 // ═══════════════════════════════════════════════════════════════
@@ -98,7 +97,7 @@ export function getLobsterAscii(): string {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TITLE ART — Original block letters
+// TITLE ART — Original block letters with ocean gradient
 // ═══════════════════════════════════════════════════════════════
 
 export function getTitleArt(): string {
@@ -114,6 +113,7 @@ export function getTitleArt(): string {
 }
 
 const TAGLINE = 'Your agent can build the app. ShipMobile ships it.';
+const REPO_URL = 'https://github.com/ACRLABSDEV/shipmobile';
 
 // ═══════════════════════════════════════════════════════════════
 // MAIN DISPLAY
@@ -130,7 +130,7 @@ function renderSprite(): void {
 
 /**
  * Full startup banner — shown on bare `shipmobile` command.
- * Sprite + title art + command list.
+ * Sprite + title art + command list in Claude Code style.
  */
 export function printCommandList(version = '0.1.0'): void {
   console.log();
@@ -138,46 +138,43 @@ export function printCommandList(version = '0.1.0'): void {
   console.log();
   console.log(getTitleArt());
   console.log();
-  console.log('  ' + colors.dim(TAGLINE));
-  console.log('  ' + colors.dim(`v${version}`) + colors.dim(` ${figures.dot} `) + colors.dim('https://github.com/ACRLABSDEV/shipmobile'));
+  console.log(`  ${colors.dim(TAGLINE)}`);
+  console.log(`  ${colors.dim(`v${version}`)} ${colors.dim(figures.dot)} ${hyperlink(colors.dim(REPO_URL), REPO_URL)}`);
+  console.log();
+  console.log(`  ${dotLine(60)}`);
   console.log();
 
-  // Commands — all ready now (Phases 0-5 complete)
-  const commands: [string, string, string][] = [
-    ['🔐', 'login',    'Authenticate with Expo, Apple & Google Play'],
-    ['🔍', 'init',     'Detect project and create config'],
-    ['🩺', 'doctor',   'Run 23 health checks'],
-    ['📊', 'audit',    'Static analysis for store readiness'],
-    ['🖼️ ', 'assets',   'Process icons, splash, screenshots'],
-    ['📝', 'prepare',  'Generate store metadata & privacy policy'],
-    ['🔨', 'build',    'Trigger cloud build via EAS'],
-    ['📡', 'status',   'Check build progress'],
-    ['📱', 'preview',  'Preview links + QR codes'],
-    ['🚀', 'submit',   'Submit to App Store / Play Store'],
-    ['🔄', 'reset',    'Clear local config and start fresh'],
-    ['🤖', 'mcp',      'Start MCP server for AI agents'],
+  // Commands — Claude Code style: no emoji, brand name + dim description
+  const commands: [string, string][] = [
+    ['login',    'Authenticate with Expo, Apple & Google Play'],
+    ['init',     'Detect project and create config'],
+    ['doctor',   'Run 23 health checks on your project'],
+    ['audit',    'Static analysis for store readiness'],
+    ['assets',   'Process icons, splash screens, screenshots'],
+    ['prepare',  'Generate store metadata & privacy policy'],
+    ['build',    'Trigger cloud build via EAS'],
+    ['status',   'Check build progress & history'],
+    ['preview',  'Preview links + QR codes for testing'],
+    ['submit',   'Submit to App Store / Play Store'],
+    ['reset',    'Clear local config and start fresh'],
+    ['mcp',      'Start MCP server for AI agents'],
   ];
 
-  const maxName = Math.max(...commands.map(c => c[1].length));
+  const maxName = Math.max(...commands.map(c => c[0].length));
 
-  for (const [icon, name, desc] of commands) {
+  for (const [name, desc] of commands) {
     const padded = name.padEnd(maxName + 2);
-    console.log(`  ${icon} ${colors.brand(padded)}${colors.dim(desc)}`);
+    console.log(`  ${colors.brand(padded)} ${colors.dim(desc)}`);
   }
 
   console.log();
 
-  const footer = boxen(
-    colors.dim('Usage  ') + chalk.white('shipmobile <command> [options]') + '\n' +
-    colors.dim('Help   ') + chalk.white('shipmobile <command> --help'),
-    {
-      padding: { top: 0, bottom: 0, left: 1, right: 1 },
-      borderStyle: 'round',
-      borderColor: 'cyan',
-      dimBorder: true,
-    },
+  // Footer — thin box instead of heavy boxen
+  const usageBox = thinBox(
+    `${colors.dim('Usage')}  ${chalk.white('shipmobile <command> [options]')}\n${colors.dim('Help')}   ${chalk.white('shipmobile <command> --help')}`,
+    { borderColor: colors.dim },
   );
-  console.log(footer.split('\n').map(l => '  ' + l).join('\n'));
+  console.log(usageBox.split('\n').map(l => '  ' + l).join('\n'));
   console.log();
 }
 
@@ -188,15 +185,18 @@ export function printBanner(version = '0.1.0'): void {
   console.log();
   console.log(getTitleArt());
   console.log();
-  console.log('  ' + colors.dim(TAGLINE));
-  console.log('  ' + colors.dim(`v${version}`));
+  console.log(`  ${colors.dim(TAGLINE)}`);
+  console.log(`  ${colors.dim(`v${version}`)}`);
   console.log();
 }
 
-/** Compact header for subcommands */
-export function printHeader(command: string): void {
+/** Compact header for subcommands — brand + dot + command + description */
+export function printHeader(command: string, description?: string): void {
   console.log();
-  console.log(`  ${colors.brandBold('ShipMobile')} ${colors.dim(figures.dot)} ${colors.dim(command)}`);
+  console.log(`  ${colors.brandBold('ShipMobile')} ${colors.dim(figures.dot)} ${colors.bold(command)}`);
+  if (description) {
+    console.log(`  ${colors.dim(description)}`);
+  }
   console.log(`  ${divider(52)}`);
   console.log();
 }
@@ -213,4 +213,4 @@ export const BANNER_PLAIN = `
   Your agent can build the app. ShipMobile ships it.
 `;
 
-export { getTitleArt };
+// getTitleArt already exported above
