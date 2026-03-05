@@ -5,7 +5,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { handleLogin, handleInit, handleDoctor, handleAudit, handleAssets, handlePrepare, handleBuild, handleStatus, handlePreview } from './handlers.js';
+import { handleLogin, handleInit, handleDoctor, handleAudit, handleAssets, handlePrepare, handleBuild, handleStatus, handlePreview, handleSubmit, handleReset } from './handlers.js';
 
 export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
@@ -125,10 +125,27 @@ export async function startMcpServer(): Promise<void> {
     handlePreview,
   );
 
-  // Stub tools for future phases
-  server.tool('shipmobile_submit', 'Submit to App Store / Play Store', {}, async () => ({
-    content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Not implemented yet — coming in a future phase.' }) }],
-  }));
+  server.tool(
+    'shipmobile_submit',
+    'Submit builds to App Store Connect and Google Play Store',
+    {
+      project_path: z.string().optional().describe('Project path'),
+      platform: z.enum(['ios', 'android']).optional().describe('Target platform'),
+      track: z.enum(['internal', 'alpha', 'beta', 'production']).optional().describe('Google Play track'),
+      skip_preflight: z.boolean().optional().describe('Skip pre-flight checks'),
+    },
+    handleSubmit,
+  );
+
+  server.tool(
+    'shipmobile_reset',
+    'Clear all local ShipMobile config (.shipmobile/) and start fresh',
+    {
+      project_path: z.string().optional().describe('Project path'),
+      force: z.boolean().optional().describe('Skip confirmation'),
+    },
+    handleReset,
+  );
 
   // Let users know this is working (stderr so it doesn't interfere with stdio protocol)
   if (process.stderr.isTTY) {

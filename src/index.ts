@@ -8,8 +8,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { printBanner, printHeader, printCommandList } from './cli/banner.js';
-import { renderComingSoon } from './cli/renderer.js';
-import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult, renderAssetsResult, renderPrepareResult, renderBuildResult, renderStatusResult, renderPreviewResult } from './cli/renderer.js';
+import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult, renderAssetsResult, renderPrepareResult, renderBuildResult, renderStatusResult, renderPreviewResult, renderSubmitResult, renderResetResult } from './cli/renderer.js';
 import * as login from './core/login.js';
 import * as init from './core/init.js';
 import * as doctor from './core/doctor.js';
@@ -19,6 +18,8 @@ import * as prepare from './core/prepare.js';
 import * as build from './core/build.js';
 import * as status from './core/status.js';
 import * as preview from './core/preview.js';
+import * as submit from './core/submit.js';
+import * as reset from './core/reset.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -294,13 +295,50 @@ program
     await renderPreviewResult(result);
   });
 
-// === PLACEHOLDER COMMANDS ===
-for (const cmd of ['submit']) {
-  program
-    .command(cmd)
-    .description(`${cmd} — coming soon`)
-    .action(() => renderComingSoon(cmd));
-}
+// === SUBMIT ===
+program
+  .command('submit')
+  .description('Submit builds to App Store Connect and Google Play')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--platform <platform>', 'Platform (ios, android)')
+  .option('--track <track>', 'Google Play track (internal, alpha, beta, production)', 'production')
+  .option('--skip-preflight', 'Skip pre-flight checks')
+  .action(async (options: { path: string; platform?: string; track?: string; skipPreflight?: boolean }) => {
+    printHeader('Submit');
+    const result = await submit.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      platform: options.platform as 'ios' | 'android' | undefined,
+      track: options.track as 'internal' | 'alpha' | 'beta' | 'production' | undefined,
+      skipPreflight: options.skipPreflight,
+    });
+    renderSubmitResult(result);
+  });
+
+// === RESET ===
+program
+  .command('reset')
+  .description('Clear all local ShipMobile config (.shipmobile/) and start fresh')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--force', 'Skip confirmation')
+  .action(async (options: { path: string; force?: boolean }) => {
+    if (!options.force) {
+      try {
+        const { confirm } = await import('@inquirer/prompts');
+        const yes = await confirm({ message: 'This will delete all ShipMobile config. Continue?', default: false });
+        if (!yes) {
+          console.log('  Cancelled.');
+          return;
+        }
+      } catch {
+        // Non-interactive, proceed
+      }
+    }
+    const result = await reset.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      force: options.force,
+    });
+    renderResetResult(result);
+  });
 
 program
   .command('mcp')

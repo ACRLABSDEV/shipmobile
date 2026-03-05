@@ -4,8 +4,18 @@
   "description": "Ship React Native/Expo apps to App Store & Play Store — CLI + MCP server",
   "type": "module",
   "bin": {
-    "shipmobile": "./dist/index.js"
+    "shipmobile": "./dist/index.js",
+    "shipmobile-mcp": "./dist/mcp.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ACRLABSDEV/shipmobile.git"
+  },
+  "homepage": "https://github.com/ACRLABSDEV/shipmobile#readme",
+  "bugs": {
+    "url": "https://github.com/ACRLABSDEV/shipmobile/issues"
+  },
+  "author": "ACR Labs <acanino@acrlabs.io>",
   "exports": {
     ".": "./dist/index.js",
     "./mcp": "./dist/mcp.js"

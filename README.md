@@ -108,6 +108,9 @@ Generates TestFlight and APK download links with QR codes rendered right in your
 ### 🚀 Submit (`shipmobile submit`)
 Uploads your build + metadata to App Store Connect and Google Play Console. Pre-flight checks ensure everything is complete before submission.
 
+### 🔄 Reset (`shipmobile reset`)
+Clear all local ShipMobile configuration and start fresh. Removes the `.shipmobile/` directory so you can re-initialize your project.
+
 ### 🤖 MCP Server (`shipmobile mcp`)
 Full [MCP (Model Context Protocol)](https://modelcontextprotocol.io) integration. Every command is available as a structured tool for AI agents. Drop this into any MCP-compatible client and your agent can ship apps autonomously:
 
@@ -137,10 +140,17 @@ Push over-the-air updates via Expo Updates. Skip app store review for JS/asset c
 ## Installation
 
 ```bash
+# Run directly with npx
+npx shipmobile
+
+# Or install globally
 npm install -g shipmobile
+# or
+pnpm add -g shipmobile
 ```
 
 > **Note:** ShipMobile requires Node.js 18+ and works with React Native / Expo projects.
+> For MCP server usage, run `shipmobile-mcp` or `npx shipmobile mcp`.
 
 ## Quick Start
 
@@ -214,7 +224,7 @@ ShipMobile is being built in phases. Here's where we're at:
 | **2 — Audit Engine** | ⏳ Next | 25+ static analysis rules, scoring, `--fix` |
 | **3 — Assets & Metadata** | ⏳ Planned | Icon processing, metadata generation, privacy policies |
 | **4 — Build Loop** | ⏳ Planned | Build, status, preview with QR codes |
-| **5 — Submit & Launch** | ⏳ Planned | Store submission, docs, npm publish, public launch |
+| **5 — Submit & Launch** | ✅ Complete | Store submission, reset command, docs, npm prep |
 | **6 — OTA Updates** | ⏳ Future | `update`, `rollback`, AI-assisted fixes |
 | **7 — Agentic Intelligence** | 🔮 Vision | LLM memory, proactive alerts, context-aware suggestions |
 | **8 — Ecosystem** | 🔮 Vision | Flutter/Swift/Kotlin support, plugin marketplace, CI/CD generation |

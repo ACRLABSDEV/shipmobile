@@ -634,3 +634,78 @@ export function renderPrepareResult(result: Result<import('../core/prepare.js').
   console.log(`  Next: ${theme.colors.primary('shipmobile build')}`);
   console.log();
 }
+
+export function renderSubmitResult(result: Result<import('../core/submit.js').SubmitResult>): void {
+  if (!result.ok) {
+    console.error(theme.error(result.error.message));
+    if (result.error.suggestion) {
+      console.log(theme.info(result.error.suggestion));
+    }
+    return;
+  }
+
+  const data = result.data;
+
+  // Show preflight results
+  if (data.preflight.length > 0) {
+    console.log(`  ${theme.heading('Pre-flight Checks')}`);
+    for (const check of data.preflight) {
+      const icon = check.passed ? theme.icons.check : theme.icons.cross;
+      const color = check.passed ? theme.colors.success : theme.colors.error;
+      console.log(`    ${color(icon)} ${check.message}`);
+    }
+    console.log();
+  }
+
+  if (!data.preflightPassed) {
+    console.log(theme.error('Pre-flight checks failed. Fix issues above and try again.'));
+    return;
+  }
+
+  // iOS result
+  if (data.ios) {
+    console.log(`  ${theme.heading('App Store Connect')}`);
+    console.log(`    Status: ${theme.colors.success(data.ios.status)}`);
+    console.log(`    Version: ${data.ios.version}`);
+    if (data.ios.reviewUrl) {
+      console.log(`    Review: ${theme.colors.primary(data.ios.reviewUrl)}`);
+    }
+    console.log();
+  }
+
+  // Android result
+  if (data.android) {
+    console.log(`  ${theme.heading('Google Play Store')}`);
+    console.log(`    Status: ${theme.colors.success(data.android.status)}`);
+    console.log(`    Track: ${data.android.track}`);
+    console.log(`    Version: ${data.android.version}`);
+    console.log();
+  }
+
+  if (!data.ios && !data.android) {
+    console.log(`  ${theme.icons.warning} No builds were submitted. Ensure builds exist.`);
+    console.log(`  Run ${theme.colors.primary('shipmobile build')} first.`);
+  } else {
+    console.log(`  ${theme.icons.rocket} Submission complete!`);
+    console.log(`  Track status with: ${theme.colors.primary('shipmobile status')}`);
+  }
+  console.log();
+}
+
+export function renderResetResult(result: Result<import('../core/reset.js').ResetResult>): void {
+  if (!result.ok) {
+    console.error(theme.error(result.error.message));
+    if (result.error.suggestion) {
+      console.log(theme.info(result.error.suggestion));
+    }
+    return;
+  }
+
+  const data = result.data;
+  if (data.cleared) {
+    console.log(`  ${theme.icons.success} ${theme.colors.success(data.message)}`);
+  } else {
+    console.log(`  ${theme.icons.tip} ${data.message}`);
+  }
+  console.log();
+}

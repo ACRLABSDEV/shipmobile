@@ -11,6 +11,8 @@ import * as prepare from '../core/prepare.js';
 import * as build from '../core/build.js';
 import * as status from '../core/status.js';
 import * as preview from '../core/preview.js';
+import * as submit from '../core/submit.js';
+import * as reset from '../core/reset.js';
 
 function jsonResponse(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -187,6 +189,34 @@ export async function handlePreview(args: {
     projectPath: args.project_path,
     buildId: args.build_id,
     platform: args.platform,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handleSubmit(args: {
+  project_path?: string;
+  platform?: 'ios' | 'android';
+  track?: 'internal' | 'alpha' | 'beta' | 'production';
+  skip_preflight?: boolean;
+}) {
+  const result = await submit.execute({
+    projectPath: args.project_path,
+    platform: args.platform,
+    track: args.track,
+    skipPreflight: args.skip_preflight,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handleReset(args: {
+  project_path?: string;
+  force?: boolean;
+}) {
+  const result = await reset.execute({
+    projectPath: args.project_path,
+    force: args.force,
   });
   if (!result.ok) return errorResponse(result.error.message);
   return jsonResponse(result.data);
