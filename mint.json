@@ -1,0 +1,122 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "ShipMobile",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#22d3ee",
+    "light": "#90e0ef",
+    "dark": "#0891b2",
+    "anchors": {
+      "from": "#0891b2",
+      "to": "#22d3ee"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/ACRLABSDEV/shipmobile"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Install",
+    "url": "https://www.npmjs.com/package/shipmobile"
+  },
+  "tabs": [
+    {
+      "name": "Commands",
+      "url": "docs/commands"
+    },
+    {
+      "name": "Guides",
+      "url": "docs/guides"
+    },
+    {
+      "name": "MCP Server",
+      "url": "docs/mcp"
+    },
+    {
+      "name": "API Reference",
+      "url": "docs/api"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/ACRLABSDEV/shipmobile"
+    },
+    {
+      "name": "npm",
+      "icon": "npm",
+      "url": "https://www.npmjs.com/package/shipmobile"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "docs/introduction",
+        "docs/quickstart"
+      ]
+    },
+    {
+      "group": "Commands",
+      "pages": [
+        "docs/commands/login",
+        "docs/commands/init",
+        "docs/commands/doctor",
+        "docs/commands/audit",
+        "docs/commands/assets",
+        "docs/commands/prepare",
+        "docs/commands/build",
+        "docs/commands/status",
+        "docs/commands/preview",
+        "docs/commands/submit",
+        "docs/commands/update",
+        "docs/commands/rollback",
+        "docs/commands/reset"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "docs/guides/first-deploy",
+        "docs/guides/expo-to-store",
+        "docs/guides/ota-updates",
+        "docs/guides/audit-rules",
+        "docs/guides/agent-workflow",
+        "docs/guides/troubleshooting"
+      ]
+    },
+    {
+      "group": "MCP Server",
+      "pages": [
+        "docs/mcp/overview",
+        "docs/mcp/tools"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "docs/api/result-types",
+        "docs/api/services",
+        "docs/api/audit-engine"
+      ]
+    },
+    {
+      "group": "Advanced",
+      "pages": [
+        "docs/advanced/ci-cd",
+        "docs/advanced/configuration",
+        "docs/contributing"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/ACRLABSDEV/shipmobile"
+  }
+}
