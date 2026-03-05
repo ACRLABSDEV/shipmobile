@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #080e14;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 40px;
+    font-family: monospace;
+  }
+  h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: #22d3ee;
+    letter-spacing: 0.15em;
+  }
+  .sizes {
+    display: flex;
+    align-items: flex-end;
+    gap: 40px;
+  }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .label {
+    font-size: 9px;
+    color: #3d5a6e;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  canvas { image-rendering: pixelated; }
+</style>
+</head>
+<body>
+
+<h2>CAPTAIN CLAWDE</h2>
+
+<div class="sizes">
+  <div class="panel">
+    <canvas id="xl" width="200" height="180"></canvas>
+    <div class="label">preview</div>
+  </div>
+  <div class="panel">
+    <canvas id="md" width="100" height="90"></canvas>
+    <div class="label">CLI (5px)</div>
+  </div>
+  <div class="panel">
+    <canvas id="sm" width="80" height="72"></canvas>
+    <div class="label">CLI (4px)</div>
+  </div>
+  <div class="panel">
+    <canvas id="xs" width="40" height="36"></canvas>
+    <div class="label">terminal (2px)</div>
+  </div>
+</div>
+
+<script>
+const PAL = {
+  '_': null,
+  'K': '#06080e',   // outline
+  // body
+  'r': '#d81c0c',   // mid red
+  'R': '#9a0e06',   // shadow red
+  'o': '#f83820',   // highlight red
+  'O': '#ff6644',   // brightest sheen (eye surround)
+  // eye
+  'W': '#ffffff',   // eye white
+  // hat — white captain
+  'hw': '#f2f2f2',  // hat white
+  'hs': '#d4d4d4',  // hat shadow
+  'hb': '#101828',  // hat brim band (dark navy stripe)
+  'hd': '#080e18',  // hat brim underside
+  // anchor on hat
+  'G':  '#d4a018',  // gold anchor
+  'g':  '#7a5c08',  // anchor shadow
+};
+
+// 20 wide x 18 tall
+const GRID = [
+//   0     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
+  [ '_',  '_',  '_',  '_',  '_',  'K',  'K',  'K',  'K',  'K',  'K',  'K',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 0  hat crown top
+  [ '_',  '_',  '_',  '_',  'K',  'hw', 'hw', 'G',  'hw', 'hw', 'hw', 'hw', 'K',  '_',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 1  crown + anchor
+  [ '_',  '_',  '_',  'K',  'hw', 'hw', 'hs', 'g',  'hs', 'hw', 'hw', 'hw', 'hw', 'K',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 2  crown
+  [ '_',  'K',  'K',  'hb', 'hb', 'hw', 'hw', 'hw', 'hw', 'hw', 'hb', 'hb', 'hd', 'hd', 'K',  'K',  '_',  '_',  '_',  '_'  ], // 3  brim band + wide brim
+  [ '_',  '_',  'K',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'K',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 4  forehead
+  [ '_',  'K',  'r',  'O',  'W',  'W',  'r',  'r',  'r',  'W',  'W',  'O',  'r',  'r',  'K',  '_',  '_',  '_',  '_',  '_'  ], // 5  eyes top
+  [ '_',  'K',  'r',  'O',  'W',  'r',  'r',  'r',  'r',  'r',  'W',  'O',  'r',  'r',  'K',  '_',  '_',  '_',  '_',  '_'  ], // 6  eyes bottom
+  [ '_',  'K',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'K',  '_',  '_',  '_',  '_',  '_'  ], // 7  body
+  [ 'K',  'o',  'o',  'K',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'K',  'o',  'o',  'K',  '_',  '_',  '_',  '_'  ], // 8  claws
+  [ 'K',  'o',  'R',  'K',  'r',  'r',  'o',  'r',  'r',  'o',  'r',  'r',  'K',  'R',  'o',  'K',  '_',  '_',  '_',  '_'  ], // 9  claw mid
+  [ '_',  'K',  'o',  'K',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'K',  'o',  'K',  '_',  '_',  '_',  '_',  '_'  ], // 10 claw bottom
+  [ '_',  '_',  'K',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'K',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 11 lower body
+  [ '_',  '_',  'K',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'r',  'K',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 12
+  [ '_',  '_',  '_',  'K',  'R',  'K',  '_',  'K',  'r',  'r',  'K',  '_',  'K',  'R',  'K',  '_',  '_',  '_',  '_',  '_'  ], // 13 legs
+  [ '_',  '_',  '_',  'K',  'R',  'K',  '_',  'K',  'r',  'r',  'K',  '_',  'K',  'R',  'K',  '_',  '_',  '_',  '_',  '_'  ], // 14
+  [ '_',  '_',  '_',  '_',  'K',  '_',  '_',  '_',  'K',  'K',  '_',  '_',  '_',  'K',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 15
+  [ '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 16
+  [ '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_',  '_'  ], // 17
+];
+
+function draw(id, S) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  GRID.forEach((row, y) => {
+    row.forEach((cell, x) => {
+      const color = PAL[cell];
+      if (!color) return;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * S, y * S, S, S);
+    });
+  });
+}
+
+draw('xl', 10);
+draw('md', 5);
+draw('sm', 4);
+draw('xs', 2);
+</script>
+</body>
+</html>
