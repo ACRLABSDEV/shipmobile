@@ -13,6 +13,8 @@ import * as status from '../core/status.js';
 import * as preview from '../core/preview.js';
 import * as submit from '../core/submit.js';
 import * as reset from '../core/reset.js';
+import * as update from '../core/update.js';
+import * as rollback from '../core/rollback.js';
 
 function jsonResponse(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -217,6 +219,44 @@ export async function handleReset(args: {
   const result = await reset.execute({
     projectPath: args.project_path,
     force: args.force,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handleUpdate(args: {
+  project_path?: string;
+  channel?: string;
+  message?: string;
+  platform?: 'ios' | 'android' | 'all';
+  branch?: string;
+  non_interactive?: boolean;
+}) {
+  const result = await update.execute({
+    projectPath: args.project_path,
+    channel: args.channel,
+    message: args.message,
+    platform: args.platform,
+    branch: args.branch,
+    nonInteractive: args.non_interactive,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handleRollback(args: {
+  project_path?: string;
+  channel?: string;
+  group?: string;
+  platform?: 'ios' | 'android' | 'all';
+  non_interactive?: boolean;
+}) {
+  const result = await rollback.execute({
+    projectPath: args.project_path,
+    channel: args.channel,
+    group: args.group,
+    platform: args.platform,
+    nonInteractive: args.non_interactive,
   });
   if (!result.ok) return errorResponse(result.error.message);
   return jsonResponse(result.data);

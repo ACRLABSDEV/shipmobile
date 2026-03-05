@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { printHeader, printCommandList } from './cli/banner.js';
-import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult, renderAssetsResult, renderPrepareResult, renderBuildResult, renderStatusResult, renderPreviewResult, renderSubmitResult, renderResetResult } from './cli/renderer.js';
+import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult, renderAssetsResult, renderPrepareResult, renderBuildResult, renderStatusResult, renderPreviewResult, renderSubmitResult, renderResetResult, renderUpdateResult, renderRollbackResult } from './cli/renderer.js';
 import * as login from './core/login.js';
 import * as init from './core/init.js';
 import * as doctor from './core/doctor.js';
@@ -20,6 +20,8 @@ import * as status from './core/status.js';
 import * as preview from './core/preview.js';
 import * as submit from './core/submit.js';
 import * as reset from './core/reset.js';
+import * as update from './core/update.js';
+import * as rollback from './core/rollback.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -351,6 +353,50 @@ program
       force: options.force,
     });
     renderResetResult(result);
+  });
+
+// === UPDATE (OTA) ===
+program
+  .command('update')
+  .description('Publish an OTA update via EAS Update')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--channel <channel>', 'Update channel (production, staging, preview)', 'production')
+  .option('--message <message>', 'Update message/description')
+  .option('--platform <platform>', 'Target platform (ios, android, all)', 'all')
+  .option('--branch <branch>', 'EAS branch name')
+  .option('--non-interactive', 'Skip interactive prompts')
+  .action(async (options: { path: string; channel?: string; message?: string; platform?: string; branch?: string; nonInteractive?: boolean }) => {
+    printHeader('OTA Update');
+    const result = await update.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      channel: options.channel,
+      message: options.message,
+      platform: options.platform as 'ios' | 'android' | 'all' | undefined,
+      branch: options.branch,
+      nonInteractive: options.nonInteractive,
+    });
+    renderUpdateResult(result);
+  });
+
+// === ROLLBACK ===
+program
+  .command('rollback')
+  .description('Roll back an OTA update to a previous version')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--channel <channel>', 'Update channel', 'production')
+  .option('--group <groupId>', 'Specific update group ID to roll back to')
+  .option('--platform <platform>', 'Target platform (ios, android, all)', 'all')
+  .option('--non-interactive', 'Skip interactive prompts')
+  .action(async (options: { path: string; channel?: string; group?: string; platform?: string; nonInteractive?: boolean }) => {
+    printHeader('Rollback');
+    const result = await rollback.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      channel: options.channel,
+      group: options.group,
+      platform: options.platform as 'ios' | 'android' | 'all' | undefined,
+      nonInteractive: options.nonInteractive,
+    });
+    renderRollbackResult(result);
   });
 
 program

@@ -642,6 +642,71 @@ export function renderSubmitResult(result: Result<import('../core/submit.js').Su
   console.log();
 }
 
+// ─── Update (OTA) ────────────────────────────────────────────────────
+
+export function renderUpdateResult(result: Result<import('../core/update.js').UpdateResult>): void {
+  if (!result.ok) {
+    console.log(`  ${status('fail', result.error.message)}`);
+    if (result.error.suggestion) console.log(`  ${hint(result.error.suggestion)}`);
+    return;
+  }
+
+  const data = result.data;
+
+  // Native change warnings
+  if (data.nativeCheck.hasNativeChanges) {
+    console.log(`  ${categoryHeading('Native Changes Detected')}`);
+    for (const change of data.nativeCheck.changes) {
+      console.log(`    ${status('warn', change)}`);
+    }
+    console.log(`    ${hint(`Consider running ${cmd('shipmobile build')} for a full native rebuild`)}`);
+    console.log();
+  }
+
+  if (data.published && data.update) {
+    console.log(`  ${categoryHeading('OTA Update Published')}`);
+    const label = (text: string) => colors.dim(text.padEnd(12));
+    console.log(`    ${label('Channel')}${colors.brand(data.channel)}`);
+    console.log(`    ${label('Platform')}${data.platform}`);
+    console.log(`    ${label('Group')}${data.update.group}`);
+    if (data.update.message) console.log(`    ${label('Message')}${data.update.message}`);
+    console.log(`    ${label('Runtime')}${data.update.runtimeVersion}`);
+    console.log();
+    console.log(`  ${status('pass', 'Update published successfully')}`);
+    console.log(`  ${hint(`Roll back with ${cmd('shipmobile rollback --channel ' + data.channel)}`)}`);
+  }
+  console.log();
+}
+
+// ─── Rollback ────────────────────────────────────────────────────────
+
+export function renderRollbackResult(result: Result<import('../core/rollback.js').RollbackResult>): void {
+  if (!result.ok) {
+    console.log(`  ${status('fail', result.error.message)}`);
+    if (result.error.suggestion) console.log(`  ${hint(result.error.suggestion)}`);
+    return;
+  }
+
+  const data = result.data;
+
+  if (data.availableGroups.length > 0) {
+    console.log(`  ${categoryHeading('Recent Updates')}`);
+    for (const group of data.availableGroups.slice(0, 5)) {
+      const marker = data.update && group.group === data.previousGroup?.group ? colors.brand(' ← rolled back to') : '';
+      console.log(`    ${colors.dim(group.createdAt.slice(0, 10))} ${group.group.slice(0, 8)}${group.message ? ` ${colors.dim(group.message)}` : ''}${marker}`);
+    }
+    console.log();
+  }
+
+  if (data.rolledBack && data.update) {
+    console.log(`  ${status('pass', `Rolled back on channel "${data.channel}"`)}`);
+    if (data.previousGroup) {
+      console.log(`  ${hint(`Reverted to group ${data.previousGroup.group.slice(0, 8)}`)}`);
+    }
+  }
+  console.log();
+}
+
 // ─── Reset ───────────────────────────────────────────────────────────
 
 export function renderResetResult(result: Result<import('../core/reset.js').ResetResult>): void {

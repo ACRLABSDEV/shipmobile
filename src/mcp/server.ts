@@ -5,7 +5,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { handleLogin, handleInit, handleDoctor, handleAudit, handleAssets, handlePrepare, handleBuild, handleStatus, handlePreview, handleSubmit, handleReset } from './handlers.js';
+import { handleLogin, handleInit, handleDoctor, handleAudit, handleAssets, handlePrepare, handleBuild, handleStatus, handlePreview, handleSubmit, handleReset, handleUpdate, handleRollback } from './handlers.js';
 
 export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
@@ -145,6 +145,33 @@ export async function startMcpServer(): Promise<void> {
       force: z.boolean().optional().describe('Skip confirmation'),
     },
     handleReset,
+  );
+
+  server.tool(
+    'shipmobile_update',
+    'Publish an OTA update via EAS Update — push JS/asset changes without a full rebuild',
+    {
+      project_path: z.string().optional().describe('Project path'),
+      channel: z.string().optional().describe('Update channel (production, staging, preview)'),
+      message: z.string().optional().describe('Update message/description'),
+      platform: z.enum(['ios', 'android', 'all']).optional().describe('Target platform (default: all)'),
+      branch: z.string().optional().describe('EAS branch name'),
+      non_interactive: z.boolean().optional().describe('Skip interactive prompts'),
+    },
+    handleUpdate,
+  );
+
+  server.tool(
+    'shipmobile_rollback',
+    'Roll back an OTA update to a previous version on a channel',
+    {
+      project_path: z.string().optional().describe('Project path'),
+      channel: z.string().optional().describe('Update channel (default: production)'),
+      group: z.string().optional().describe('Specific update group ID to roll back to'),
+      platform: z.enum(['ios', 'android', 'all']).optional().describe('Target platform'),
+      non_interactive: z.boolean().optional().describe('Skip interactive prompts'),
+    },
+    handleRollback,
   );
 
   // Let users know this is working (stderr so it doesn't interfere with stdio protocol)
