@@ -6,6 +6,8 @@ import * as login from '../core/login.js';
 import * as init from '../core/init.js';
 import * as doctor from '../core/doctor.js';
 import * as audit from '../core/audit/index.js';
+import * as assets from '../core/assets.js';
+import * as prepare from '../core/prepare.js';
 
 function jsonResponse(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -96,6 +98,44 @@ export async function handleAudit(args: {
     category: args.category,
     fix: args.fix,
     diff: args.diff,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handleAssets(args: {
+  project_path?: string;
+  icon_path?: string;
+  splash_path?: string;
+  screenshots_dir?: string;
+  foreground_path?: string;
+  background_path?: string;
+}) {
+  const result = await assets.execute({
+    projectPath: args.project_path,
+    iconPath: args.icon_path,
+    splashPath: args.splash_path,
+    screenshotsDir: args.screenshots_dir,
+    foregroundPath: args.foreground_path,
+    backgroundPath: args.background_path,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handlePrepare(args: {
+  project_path?: string;
+  app_name?: string;
+  description?: string;
+  keywords?: string[];
+  category?: string;
+}) {
+  const result = await prepare.execute({
+    projectPath: args.project_path,
+    appName: args.app_name,
+    description: args.description,
+    keywords: args.keywords,
+    category: args.category,
   });
   if (!result.ok) return errorResponse(result.error.message);
   return jsonResponse(result.data);

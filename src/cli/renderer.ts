@@ -314,3 +314,141 @@ function groupFindings(findings: AuditFinding[]): Map<string, AuditFinding[]> {
   }
   return map;
 }
+
+// === ASSETS ===
+export function renderAssetsResult(result: Result<import('../core/assets.js').AssetsResult>): void {
+  if (!result.ok) {
+    console.log(`\n  ${theme.error(result.error.message)}`);
+    if (result.error.suggestion) {
+      console.log(`  ${theme.icons.arrow} ${theme.colors.dim(result.error.suggestion)}`);
+    }
+    console.log();
+    return;
+  }
+
+  const data = result.data;
+  console.log();
+
+  // Icon
+  console.log('  App Icon:');
+  if (data.icon) {
+    console.log(`  ${theme.icons.success} Source icon found: ${data.icon.source} (${data.icon.width}×${data.icon.height})`);
+    const iosCount = data.icon.generated.filter(g => g.platform === 'ios').length;
+    const androidCount = data.icon.generated.filter(g => g.platform === 'android').length;
+    console.log(`  ${theme.icons.success} Generated ${iosCount} iOS sizes + ${androidCount} Android sizes`);
+  } else {
+    console.log(`  ${theme.icons.error} ${theme.colors.error('No icon found')}`);
+  }
+  console.log();
+
+  // Adaptive icon
+  if (data.adaptiveIcon) {
+    console.log('  Adaptive Icon (Android):');
+    console.log(`  ${theme.icons.success} Foreground + background layers processed (${data.adaptiveIcon.generated.length} files)`);
+    console.log();
+  }
+
+  // Splash
+  console.log('  Splash Screen:');
+  if (data.splash.length > 0) {
+    for (const s of data.splash) {
+      if (s.valid) {
+        console.log(`  ${theme.icons.success} ${s.platform}: ${s.width}×${s.height}`);
+      } else {
+        console.log(`  ${theme.icons.warning} ${s.platform}: ${s.width}×${s.height}`);
+        for (const issue of s.issues) {
+          console.log(`    ${theme.icons.arrow} ${theme.colors.dim(issue)}`);
+        }
+      }
+    }
+  } else {
+    console.log(`  ${theme.icons.error} ${theme.colors.error('No splash screen found')}`);
+  }
+  console.log();
+
+  // Screenshots
+  console.log('  Screenshots:');
+  for (const ss of data.screenshots) {
+    if (ss.found) {
+      console.log(`  ${theme.icons.success} ${ss.label} (${ss.size})`);
+    } else {
+      const icon = ss.required ? theme.icons.error : theme.icons.warning;
+      const color = ss.required ? theme.colors.error : theme.colors.warning;
+      console.log(`  ${icon} ${color(`Missing: ${ss.label} (${ss.size})`)}${ss.required ? '' : ' (optional)'}`);
+    }
+  }
+  console.log();
+
+  // Missing & recommendations
+  if (data.missing.length > 0) {
+    console.log(`  ${theme.colors.dim('Missing:')}`);
+    for (const m of data.missing) {
+      console.log(`    ${theme.icons.arrow} ${m}`);
+    }
+    console.log();
+  }
+  if (data.recommendations.length > 0) {
+    for (const r of data.recommendations) {
+      console.log(`  ${theme.icons.tip} ${theme.colors.info(r)}`);
+    }
+    console.log();
+  }
+}
+
+// === PREPARE ===
+export function renderPrepareResult(result: Result<import('../core/prepare.js').PrepareResult>): void {
+  if (!result.ok) {
+    console.log(`\n  ${theme.error(result.error.message)}`);
+    if (result.error.suggestion) {
+      console.log(`  ${theme.icons.arrow} ${theme.colors.dim(result.error.suggestion)}`);
+    }
+    console.log();
+    return;
+  }
+
+  const data = result.data;
+  console.log();
+  console.log('  Generated metadata:');
+  console.log(`    App Name:     ${data.metadata.appName.value} ${theme.colors.dim(`(${data.metadata.appName.source})`)}`);
+  console.log(`    Subtitle:     ${data.metadata.subtitle.value || '(none)'} ${theme.colors.dim(`(${data.metadata.subtitle.source})`)}`);
+  console.log(`    Category:     ${data.metadata.category.value} ${theme.colors.dim(`(${data.metadata.category.source})`)}`);
+  console.log(`    Age Rating:   ${data.metadata.ageRating.value}`);
+  console.log(`    Description:  ${data.metadata.shortDescription.value.slice(0, 60)}${data.metadata.shortDescription.value.length > 60 ? '...' : ''}`);
+  console.log(`    Keywords:     ${data.metadata.keywords.value || '(none)'}`);
+  console.log();
+
+  // Privacy
+  if (data.privacy.permissions.length > 0) {
+    console.log('  Privacy:');
+    console.log(`    Detected permissions: ${data.privacy.permissions.join(', ')}`);
+    console.log(`  ${theme.icons.success} Generated privacy policy ${theme.icons.arrow} privacy-policy.html`);
+    console.log(`  ${theme.icons.tip} ${theme.colors.info('Host this at a public URL and add it to your app listing')}`);
+    console.log();
+  }
+
+  // Validation
+  const errors = data.validation.filter(v => v.severity === 'error');
+  const warnings = data.validation.filter(v => v.severity === 'warning');
+  if (errors.length > 0) {
+    console.log(`  ${theme.icons.error} ${theme.colors.error(`${errors.length} validation error(s):`)}`);
+    for (const e of errors) {
+      console.log(`    ${theme.icons.arrow} ${e.field}: ${e.message}`);
+    }
+    console.log();
+  }
+  if (warnings.length > 0) {
+    console.log(`  ${theme.icons.warning} ${theme.colors.warning(`${warnings.length} warning(s):`)}`);
+    for (const w of warnings) {
+      console.log(`    ${theme.icons.arrow} ${w.field}: ${w.message}`);
+    }
+    console.log();
+  }
+  if (errors.length === 0 && warnings.length === 0) {
+    console.log(`  ${theme.icons.success} All validation checks passed`);
+    console.log();
+  }
+
+  console.log(`  ${theme.icons.success} Metadata saved to ${data.savedTo}`);
+  console.log(`  Next: ${theme.colors.primary('shipmobile build')}`);
+  console.log();
+}

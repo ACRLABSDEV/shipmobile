@@ -5,7 +5,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { handleLogin, handleInit, handleDoctor, handleAudit } from './handlers.js';
+import { handleLogin, handleInit, handleDoctor, handleAudit, handleAssets, handlePrepare } from './handlers.js';
 
 export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
@@ -60,6 +60,33 @@ export async function startMcpServer(): Promise<void> {
       diff: z.boolean().optional().describe('Compare with previous audit'),
     },
     handleAudit,
+  );
+
+  server.tool(
+    'shipmobile_assets',
+    'Validate and process app assets (icons, splash screens, screenshots)',
+    {
+      project_path: z.string().optional().describe('Project path'),
+      icon_path: z.string().optional().describe('Path to source icon (≥1024×1024)'),
+      splash_path: z.string().optional().describe('Path to splash screen image'),
+      screenshots_dir: z.string().optional().describe('Path to screenshots directory'),
+      foreground_path: z.string().optional().describe('Android adaptive icon foreground layer'),
+      background_path: z.string().optional().describe('Android adaptive icon background layer'),
+    },
+    handleAssets,
+  );
+
+  server.tool(
+    'shipmobile_prepare',
+    'Generate and validate app store metadata (description, keywords, privacy policy)',
+    {
+      project_path: z.string().optional().describe('Project path'),
+      app_name: z.string().optional().describe('App name override'),
+      description: z.string().optional().describe('App description override'),
+      keywords: z.array(z.string()).optional().describe('Keywords override'),
+      category: z.string().optional().describe('App category override'),
+    },
+    handlePrepare,
   );
 
   // Stub tools for future phases

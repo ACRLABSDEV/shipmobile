@@ -9,11 +9,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { printBanner, printHeader, printCommandList } from './cli/banner.js';
 import { renderComingSoon } from './cli/renderer.js';
-import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult } from './cli/renderer.js';
+import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult, renderAssetsResult, renderPrepareResult } from './cli/renderer.js';
 import * as login from './core/login.js';
 import * as init from './core/init.js';
 import * as doctor from './core/doctor.js';
 import * as audit from './core/audit/index.js';
+import * as assets from './core/assets.js';
+import * as prepare from './core/prepare.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -186,8 +188,52 @@ program
     renderAuditResult(result);
   });
 
+// === ASSETS ===
+program
+  .command('assets')
+  .description('Validate and process app assets (icons, splash, screenshots)')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--icon <iconPath>', 'Path to source icon')
+  .option('--splash <splashPath>', 'Path to splash screen')
+  .option('--screenshots <dir>', 'Path to screenshots directory')
+  .option('--foreground <path>', 'Adaptive icon foreground layer')
+  .option('--background <path>', 'Adaptive icon background layer')
+  .action(async (options: { path: string; icon?: string; splash?: string; screenshots?: string; foreground?: string; background?: string }) => {
+    printHeader('Asset Validation');
+    const result = await assets.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      iconPath: options.icon,
+      splashPath: options.splash,
+      screenshotsDir: options.screenshots,
+      foregroundPath: options.foreground,
+      backgroundPath: options.background,
+    });
+    renderAssetsResult(result);
+  });
+
+// === PREPARE ===
+program
+  .command('prepare')
+  .description('Generate and validate app store metadata')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--name <name>', 'App name')
+  .option('--description <desc>', 'App description')
+  .option('--keywords <keywords...>', 'Keywords')
+  .option('--category <category>', 'App category')
+  .action(async (options: { path: string; name?: string; description?: string; keywords?: string[]; category?: string }) => {
+    printHeader('Metadata Preparation');
+    const result = await prepare.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      appName: options.name,
+      description: options.description,
+      keywords: options.keywords,
+      category: options.category,
+    });
+    renderPrepareResult(result);
+  });
+
 // === PLACEHOLDER COMMANDS ===
-for (const cmd of ['assets', 'prepare', 'build', 'status', 'preview', 'submit']) {
+for (const cmd of ['build', 'status', 'preview', 'submit']) {
   program
     .command(cmd)
     .description(`${cmd} — coming soon`)
