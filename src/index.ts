@@ -59,87 +59,99 @@ program
   .option('--apple', 'Connect Apple Developer account only')
   .option('--google', 'Connect Google Play account only')
   .option('--status', 'Show current connection status')
-  .action(async (options: { expo?: boolean; apple?: boolean; google?: boolean; status?: boolean }) => {
+  .option('--expo-token <token>', 'Expo access token (non-interactive, for CI)')
+  .option('--apple-key-id <keyId>', 'Apple API Key ID (non-interactive, for CI)')
+  .option('--apple-issuer-id <issuerId>', 'Apple Issuer ID (non-interactive, for CI)')
+  .option('--apple-key-path <keyPath>', 'Path to Apple .p8 key file (non-interactive, for CI)')
+  .option('--google-service-account <path>', 'Path to Google service account JSON (non-interactive, for CI)')
+  .action(async (options: {
+    expo?: boolean; apple?: boolean; google?: boolean; status?: boolean;
+    expoToken?: string; appleKeyId?: string; appleIssuerId?: string; appleKeyPath?: string;
+    googleServiceAccount?: string;
+  }) => {
     if (options.status) {
       const result = await login.getStatus();
       renderLoginStatus(result);
       return;
     }
 
+    // Non-interactive CI flags
+    if (options.expoToken) {
+      printHeader('Account Setup');
+      const result = await login.loginExpo({ token: options.expoToken });
+      renderLoginResult(result, 'Expo/EAS');
+      return;
+    }
+    if (options.appleKeyId && options.appleIssuerId && options.appleKeyPath) {
+      printHeader('Account Setup');
+      const result = await login.loginApple({
+        keyId: options.appleKeyId,
+        issuerId: options.appleIssuerId,
+        keyPath: options.appleKeyPath,
+      });
+      renderLoginResult(result, 'Apple Developer');
+      return;
+    }
+    if (options.googleServiceAccount) {
+      printHeader('Account Setup');
+      const result = await login.loginGoogle({ serviceAccountPath: options.googleServiceAccount });
+      renderLoginResult(result, 'Google Play');
+      return;
+    }
+
+    // Single-provider interactive (legacy flags)
+    if (options.expo || options.apple || options.google) {
+      printHeader('Account Setup');
+      if (options.expo) {
+        await runSingleExpoLogin();
+      } else if (options.apple) {
+        await runSingleAppleLogin();
+      } else if (options.google) {
+        await runSingleGoogleLogin();
+      }
+      return;
+    }
+
+    // Default: interactive wizard
     printHeader('Account Setup');
-
-    if (options.expo) {
-      await runExpoLogin();
-      return;
-    }
-    if (options.apple) {
-      await runAppleLogin();
-      return;
-    }
-    if (options.google) {
-      await runGoogleLogin();
-      return;
-    }
-
-    // Full interactive wizard
-    await runFullLoginWizard();
+    const { runLoginWizard } = await import('./core/login-wizard.js');
+    await runLoginWizard();
   });
 
-async function runExpoLogin() {
-  const { input } = await import('@inquirer/prompts');
-  const token = process.env.EXPO_TOKEN || await input({
-    message: 'Expo access token (from https://expo.dev/settings/access-tokens):',
-  });
-  const result = await login.loginExpo({ token });
-  renderLoginResult(result, 'Expo/EAS');
+async function runSingleExpoLogin() {
+  const { createInterface } = await import('node:readline/promises');
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const token = process.env.EXPO_TOKEN || await rl.question('  Expo access token: ');
+    const result = await login.loginExpo({ token: token.trim() });
+    renderLoginResult(result, 'Expo/EAS');
+  } finally { rl.close(); }
 }
 
-async function runAppleLogin() {
-  const { input } = await import('@inquirer/prompts');
-  console.log('\n  To create an App Store Connect API key:');
-  console.log('  1. Go to https://appstoreconnect.apple.com/access/integrations/api');
-  console.log('  2. Click "Generate API Key"');
-  console.log('  3. Download the .p8 file\n');
-
-  const keyId = await input({ message: 'API Key ID:' });
-  const issuerId = await input({ message: 'Issuer ID:' });
-  const keyPath = await input({ message: 'Path to .p8 key file:' });
-  const result = await login.loginApple({ keyId, issuerId, keyPath });
-  renderLoginResult(result, 'Apple Developer');
+async function runSingleAppleLogin() {
+  const { createInterface } = await import('node:readline/promises');
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    console.log('\n  To create an App Store Connect API key:');
+    console.log('  1. Go to https://appstoreconnect.apple.com/access/integrations/api');
+    console.log('  2. Click "Generate API Key"');
+    console.log('  3. Download the .p8 file\n');
+    const keyId = await rl.question('  API Key ID: ');
+    const issuerId = await rl.question('  Issuer ID: ');
+    const keyPath = await rl.question('  Path to .p8 key file: ');
+    const result = await login.loginApple({ keyId: keyId.trim(), issuerId: issuerId.trim(), keyPath: keyPath.trim() });
+    renderLoginResult(result, 'Apple Developer');
+  } finally { rl.close(); }
 }
 
-async function runGoogleLogin() {
-  const { input } = await import('@inquirer/prompts');
-  const serviceAccountPath = await input({
-    message: 'Path to Google Play service account JSON key:',
-  });
-  const result = await login.loginGoogle({ serviceAccountPath });
-  renderLoginResult(result, 'Google Play');
-}
-
-async function runFullLoginWizard() {
-  const { confirm } = await import('@inquirer/prompts');
-
-  console.log('  Step 1 of 3: Expo / EAS');
-  await runExpoLogin();
-
-  console.log('\n  Step 2 of 3: Apple Developer Account');
-  const doApple = await confirm({ message: 'Connect Apple Developer account?', default: true });
-  if (doApple) {
-    await runAppleLogin();
-  } else {
-    console.log('  ⏭ Skipped — add later with `shipmobile login --apple`');
-  }
-
-  console.log('\n  Step 3 of 3: Google Play Console (optional)');
-  const doGoogle = await confirm({ message: 'Connect Google Play?', default: false });
-  if (doGoogle) {
-    await runGoogleLogin();
-  } else {
-    console.log('  ⏭ Skipped — add later with `shipmobile login --google`');
-  }
-
-  console.log('\n  ✅ All set! Run `shipmobile init` to set up your project.\n');
+async function runSingleGoogleLogin() {
+  const { createInterface } = await import('node:readline/promises');
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const saPath = await rl.question('  Path to Google Play service account JSON key: ');
+    const result = await login.loginGoogle({ serviceAccountPath: saPath.trim() });
+    renderLoginResult(result, 'Google Play');
+  } finally { rl.close(); }
 }
 
 // === INIT ===
