@@ -7,7 +7,7 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { printBanner, printHeader } from './cli/banner.js';
+import { printBanner, printHeader, printCommandList } from './cli/banner.js';
 import { renderComingSoon } from './cli/renderer.js';
 import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult } from './cli/renderer.js';
 import * as login from './core/login.js';
@@ -37,6 +37,10 @@ program
   .addHelpText('beforeAll', () => {
     printBanner(version);
     return '';
+  })
+  .action(() => {
+    // Bare `shipmobile` with no command — show branded command list
+    printCommandList(version);
   });
 
 // === LOGIN ===
