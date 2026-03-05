@@ -11,7 +11,7 @@
     "./mcp": "./dist/mcp.js"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && cp -r assets dist/",
     "dev": "tsup --watch",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
@@ -31,6 +31,7 @@
     "mcp",
     "deployment"
   ],
+  "files": ["dist", "assets", "README.md", "LICENSE"],
   "license": "MIT",
   "engines": {
     "node": ">=18"
