@@ -43,10 +43,13 @@ async function detectConnections(cwd?: string): Promise<ConnectionStatus> {
     }
   }
 
-  // Apple: check stored creds
+  // Apple: delegated to EAS — connected if EAS is logged in
   let apple = { connected: false, label: 'Not connected' };
   if (creds.apple?.validated) {
-    apple = { connected: true, label: creds.apple.teamName || 'Connected' };
+    apple = { connected: true, label: creds.apple.teamName || 'via Expo/EAS' };
+  } else if (expo.connected) {
+    // Apple auth is handled by EAS during build/submit
+    apple = { connected: true, label: 'via Expo/EAS (auto during build)' };
   }
 
   // Google: check stored creds, then try gcloud
@@ -138,34 +141,12 @@ export async function runLoginWizard(cwd?: string): Promise<void> {
     }
 
     // --- Apple ---
+    // Apple auth is handled by EAS automatically during build/submit.
+    // If EAS is connected, Apple is good to go.
     if (!status.apple.connected) {
-      console.log(`  ${colors.brandBold('Setting up Apple...')}`);
-      console.log(`  ${colors.dim('Create an API key at https://appstoreconnect.apple.com/access/integrations/api')}`);
-      console.log();
-
-      const keyId = await rl.question(`  ${colors.text('Key ID:')} `);
-      const issuerId = await rl.question(`  ${colors.text('Issuer ID:')} `);
-      const keyPath = await rl.question(`  ${colors.text('Path to .p8 key file:')} `);
-
-      if (keyId.trim() && issuerId.trim() && keyPath.trim()) {
-        const result = await login.loginApple({
-          keyId: keyId.trim(),
-          issuerId: issuerId.trim(),
-          keyPath: keyPath.trim(),
-        }, cwd);
-
-        if (result.ok) {
-          const teamName = result.data.details.apple?.teamName || 'Apple Developer';
-          console.log(`  ${colors.success(figures.tick)} Apple connected ${colors.dim(`(${teamName})`)}`);
-        } else {
-          console.log(`  ${colors.error(figures.cross)} Apple: ${result.error.message}`);
-          if (result.error.suggestion) {
-            console.log(`    ${colors.dim(figures.pointerSmall + ' ' + result.error.suggestion)}`);
-          }
-        }
-      } else {
-        console.log(`  ${colors.dim('Skipped — missing input. Add later with')} ${colors.suggestion('shipmobile login --apple')}`);
-      }
+      console.log(`  ${colors.brandBold('Apple')}`);
+      console.log(`  ${colors.dim('Apple authentication is handled automatically by EAS during build and submit.')}`);
+      console.log(`  ${colors.dim('Connect Expo/EAS first, then Apple auth happens via browser when needed.')}`);
       console.log();
     }
 
