@@ -62,6 +62,13 @@ export async function startMcpServer(): Promise<void> {
     }));
   }
 
+  // Let users know this is working (stderr so it doesn't interfere with stdio protocol)
+  if (process.stderr.isTTY) {
+    process.stderr.write('🤖 ShipMobile MCP server running on stdio...\n');
+    process.stderr.write('   Connect via an MCP client (Cursor, Claude, etc.)\n');
+    process.stderr.write('   Press Ctrl+C to stop.\n\n');
+  }
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

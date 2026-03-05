@@ -31,12 +31,20 @@
     "mcp",
     "deployment"
   ],
-  "files": ["dist", "assets", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "@babel/parser": "^7.29.0",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
     "@inquirer/prompts": "^8.3.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "boxen": "^8.0.1",
@@ -47,6 +55,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/babel__traverse": "^7.28.0",
     "@types/gradient-string": "^1.1.6",
     "@types/node": "^20.14.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
