@@ -46,9 +46,9 @@ program
     // so banner uses sync fallback in help mode
     return '';
   })
-  .action(async () => {
+  .action(() => {
     // Bare `shipmobile` with no command — show branded command list
-    await printCommandList(version);
+    printCommandList(version);
   });
 
 // === LOGIN ===

@@ -6,10 +6,6 @@
  */
 
 import chalk from 'chalk';
-import terminalImage from 'terminal-image';
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { figures, colors } from './theme.js';
 
 // ── Palette (exact hex values from the reference) ──────────────────
@@ -85,24 +81,9 @@ function stripAnsi(str: string): string {
   return str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1B\][^\x07]*\x07/g, '').replace(/\x1B_[^\x1B]*\x1B\\/g, '');
 }
 
-// ── Render mascot via terminal-image (constrained to 10 cols × 5 rows) ──
-async function renderMascot(): Promise<string[]> {
-  try {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const spritePath = join(__dirname, '..', 'assets', 'sailor-sprite-transparent.png');
-    const img = readFileSync(spritePath);
-    const rendered = await terminalImage.buffer(img, { width: 10, height: 5 });
-    return rendered.trimEnd().split('\n');
-  } catch {
-    // Fallback to half-block pixel crab if terminal-image fails
-    return getPixelCrab();
-  }
-}
-
-// ── Logo block — mascot side-by-side with text ──────────────────────
-async function logoBlock(version: string): Promise<string> {
-  const mascotLines = await renderMascot();
+// ── Logo block — pixel crab side-by-side with text ──────────────────────
+function logoBlock(version: string): string {
+  const mascotLines = getPixelCrab();
   const textLines = [
     c.label('ACR LABS'),
     chalk.hex('#22d3ee').bold('ShipMobile'),
@@ -124,6 +105,9 @@ async function logoBlock(version: string): Promise<string> {
   return result.join('\n');
 }
 
+// Keep stripAnsi available
+
+
 // ── Usage box ─────────────────────────────────────────────────────
 function usageBox(): string {
   const borderChar = chalk.hex('#22d3ee')('│');
@@ -142,14 +126,14 @@ function usageBox(): string {
 
 // ── Main ──────────────────────────────────────────────────────────
 
-export async function printCommandList(version = '0.1.0'): Promise<void> {
+export function printCommandList(version = '0.1.0'): void {
   const lines: string[] = [];
 
   // Gradient top bar
   lines.push(gradientBar());
 
   // Logo block
-  lines.push(await logoBlock(version));
+  lines.push(logoBlock(version));
   lines.push('');
 
   // Tagline
@@ -196,10 +180,10 @@ export async function printCommandList(version = '0.1.0'): Promise<void> {
   console.log(lines.join('\n'));
 }
 
-export async function printBanner(version = '0.1.0'): Promise<void> {
+export function printBanner(version = '0.1.0'): void {
   console.log();
   console.log(gradientBar());
-  console.log(await logoBlock(version));
+  console.log(logoBlock(version));
   console.log();
   console.log(chalk.italic.hex('#5a7a8a')('Your agent can build the app. ShipMobile ships it.'));
   console.log();
