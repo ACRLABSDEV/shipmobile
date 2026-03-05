@@ -291,6 +291,8 @@ export function printCommandList(version = '0.1.0'): void {
   console.log();
   console.log(`  ${colors.italic(colors.textDim(TAGLINE))}`);
   console.log();
+  console.log(getTitleArt());
+  console.log();
   console.log(`  ${divider(68)}`);
   console.log();
   console.log(renderSections());
