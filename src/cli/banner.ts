@@ -1,52 +1,52 @@
 /**
  * ShipMobile CLI — Banner & Command Display
  *
- * Matches the premium design spec exactly:
- * - Compact pixel crab (half-block) side-by-side with brand text
- * - Thin dim dividers between sections
- * - ALL CAPS letter-spaced section labels
- * - Color-coded commands with proper column alignment
- * - Usage box with box-drawing chars + surface background
- * - No gradient header strip, no oversized ASCII art
+ * Direct port of Coopes' printHelp.js reference implementation.
+ * Converted from CJS chalk@4 to ESM chalk@5 + our theme imports.
  */
 
 import chalk from 'chalk';
-import gradient from 'gradient-string';
 import { figures, colors } from './theme.js';
 
-// Title gradient
-const titleGradient = gradient(['#38bdf8', '#22d3ee', '#2dd4bf']);
-
-// Exact colors from the design spec
+// ── Palette (exact hex values from the reference) ──────────────────
 const c = {
-  text:     chalk.hex('#cce4f0'),
-  textDim:  chalk.hex('#4e7080'),
-  muted:    chalk.hex('#3d5a6e'),
-  dimLink:  chalk.hex('#5a7a8a'),
-  cyan:     chalk.hex('#22d3ee'),
-  blue:     chalk.hex('#38bdf8'),
-  teal:     chalk.hex('#2dd4bf'),
-  green:    chalk.hex('#34d399'),
-  yellow:   chalk.hex('#fbbf24'),
-  purple:   chalk.hex('#a78bfa'),
-  border:   chalk.hex('#162030'),
-  surface:  '#0d1821',
+  cyan:    (s: string) => chalk.hex('#22d3ee').bold(s),
+  blue:    (s: string) => chalk.hex('#38bdf8')(s),
+  teal:    (s: string) => chalk.hex('#2dd4bf').bold(s),
+  green:   (s: string) => chalk.hex('#34d399').bold(s),
+  yellow:  (s: string) => chalk.hex('#fbbf24')(s),
+  purple:  (s: string) => chalk.hex('#a78bfa').bold(s),
+  dim:     (s: string) => chalk.hex('#3d5a6e')(s),
+  muted:   (s: string) => chalk.hex('#4e7080')(s),
+  text:    (s: string) => chalk.hex('#cce4f0')(s),
+  label:   (s: string) => chalk.hex('#3d5a6e')(s),
+  surface: (s: string) => chalk.bgHex('#0d1821')(s),
+  border:  (s: string) => chalk.hex('#162030')(s),
 };
 
-// ═══════════════════════════════════════════════════════════════
-// PIXEL CRAB — Half-block rendering, ~5 terminal lines
-// Exact 10×9 pixel grid from the HTML mockup canvas
-// ═══════════════════════════════════════════════════════════════
+// ── Helpers ────────────────────────────────────────────────────────
+const W = () => process.stdout.columns || 80;
+const divider = () => c.border('─'.repeat(W()));
 
+// Section label: compact, NO letter-spacing, small
+const sectionLabel = (name: string) => '\n' + c.label(name) + '\n';
+
+// Command row: fixed 12-char left col, description right
+const cmdRow = (colorFn: (s: string) => string, name: string, desc: string) =>
+  colorFn(name.padEnd(12)) + ' ' + c.muted(desc);
+
+// ── Header gradient bar ───────────────────────────────────────────
+function gradientBar(): string {
+  const hexColors = ['#0369a1', '#0891b2', '#0e7490', '#0d9488', '#059669'];
+  const segW = Math.floor(W() / hexColors.length);
+  return hexColors.map(hex => chalk.hex(hex)('─'.repeat(segW))).join('') + '\n';
+}
+
+// ── Pixel crab — half-block rendering ─────────────────────────────
 function getPixelCrab(): string[] {
   const pal: Record<number, string> = {
-    1: '#0e7490',  // dark teal
-    2: '#0891b2',  // mid cyan
-    3: '#38bdf8',  // bright blue
-    4: '#f0fafa',  // white (eyes)
-    5: '#2dd4bf',  // teal (claws)
+    1: '#0e7490', 2: '#0891b2', 3: '#38bdf8', 4: '#f0fafa', 5: '#2dd4bf',
   };
-
   const px = [
     [0,1,0,0,0,0,0,0,1,0],
     [1,1,0,0,0,0,0,0,1,1],
@@ -58,7 +58,6 @@ function getPixelCrab(): string[] {
     [0,5,2,0,2,2,0,2,5,0],
     [0,0,5,0,0,0,0,5,0,0],
   ];
-
   const lines: string[] = [];
   for (let r = 0; r < px.length; r += 2) {
     const topRow = px[r]!;
@@ -67,237 +66,149 @@ function getPixelCrab(): string[] {
     for (let col = 0; col < topRow.length; col++) {
       const top = topRow[col]!;
       const bot = botRow[col]!;
-      if (top === 0 && bot === 0) {
-        line += ' ';
-      } else if (top !== 0 && bot === 0) {
-        line += chalk.hex(pal[top]!)('▀');
-      } else if (top === 0 && bot !== 0) {
-        line += chalk.hex(pal[bot]!)('▄');
-      } else {
-        line += chalk.hex(pal[top]!).bgHex(pal[bot]!)('▀');
-      }
+      if (top === 0 && bot === 0) line += ' ';
+      else if (top !== 0 && bot === 0) line += chalk.hex(pal[top]!)('▀');
+      else if (top === 0 && bot !== 0) line += chalk.hex(pal[bot]!)('▄');
+      else line += chalk.hex(pal[top]!).bgHex(pal[bot]!)('▀');
     }
     lines.push(line);
   }
   return lines;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════
-
 function stripAnsi(str: string): string {
   // eslint-disable-next-line no-control-regex
   return str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1B\][^\x07]*\x07/g, '').replace(/\x1B_[^\x1B]*\x1B\\/g, '');
 }
 
-/** Thin dim divider spanning content width */
-function thinDivider(width = 68): string {
-  return c.border('─'.repeat(width));
-}
-
-/** Letter-spaced section label: "SETUP" → "S E T U P" */
-function sectionLabel(text: string): string {
-  return c.muted(text.toUpperCase().split('').join(' '));
-}
-
-/** Terminal width for divider */
-function tw(): number {
-  return Math.min(process.stdout.columns || 80, 76);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// LOGO BLOCK — Compact pixel crab + brand text side-by-side
-// ═══════════════════════════════════════════════════════════════
-
-function renderLogoBlock(version: string): string {
+// ── Logo block — crab side-by-side with text ──────────────────────
+function logoBlock(version: string): string {
   const crabLines = getPixelCrab();
-
-  const supertitle = c.muted('A C R   L A B S');
-  const title = chalk.bold(titleGradient('ShipMobile'));
-  const meta = `${c.dimLink(`v${version}`)}  ${c.dimLink('github.com/ACRLABSDEV/shipmobile')}`;
-
-  const textLines: string[] = [
-    supertitle,
-    title,
-    meta,
+  const textLines = [
+    c.label('ACR LABS'),
+    chalk.hex('#22d3ee').bold('ShipMobile'),
+    chalk.hex('#5a7a8a')(`v${version}`) + '  ' + c.blue('github.com/ACRLABSDEV/shipmobile'),
     '',
     '',
   ];
-
   const CRAB_WIDTH = 10;
   const GAP = '  ';
   const result: string[] = [];
-
   const maxLines = Math.max(crabLines.length, textLines.length);
   for (let i = 0; i < maxLines; i++) {
     const crab = i < crabLines.length ? crabLines[i]! : ' '.repeat(CRAB_WIDTH);
     const text = i < textLines.length ? textLines[i]! : '';
     const crabVisible = stripAnsi(crab).length;
     const pad = ' '.repeat(Math.max(0, CRAB_WIDTH - crabVisible));
-    result.push(`  ${crab}${pad}${GAP}${text}`);
+    result.push(`${crab}${pad}${GAP}${text}`);
   }
-
   return result.join('\n');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// COMMAND SECTIONS
-// ═══════════════════════════════════════════════════════════════
+// ── Usage box ─────────────────────────────────────────────────────
+function usageBox(): string {
+  const borderChar = chalk.hex('#22d3ee')('│');
+  const pad = ' ';
+  const row = (label: string, cmdStr: string, arg: string, flag: string) =>
+    borderChar + pad + chalk.hex('#5a7a8a')(label.padEnd(7)) + ' ' +
+    chalk.hex('#22d3ee')(cmdStr) + chalk.hex('#a78bfa')(arg) + chalk.hex('#34d399')(flag);
 
-interface CmdEntry {
-  name: string;
-  desc: string;
-  color: 'cyan' | 'green' | 'yellow' | 'purple' | 'teal' | 'dim';
+  return [
+    chalk.hex('#162030')('╶' + '─'.repeat(W() - 2) + '╴'),
+    row('USAGE', 'shipmobile', ' <command>', ' [options]'),
+    row('HELP ', 'shipmobile', ' <command>', ' --help'),
+    chalk.hex('#162030')('╶' + '─'.repeat(W() - 2) + '╴'),
+  ].join('\n');
 }
 
-const colorMap: Record<CmdEntry['color'], (s: string) => string> = {
-  cyan:   (s) => c.cyan(chalk.bold(s)),
-  green:  (s) => c.green(chalk.bold(s)),
-  yellow: (s) => c.yellow(chalk.bold(s)),
-  purple: (s) => c.purple(chalk.bold(s)),
-  teal:   (s) => c.teal(chalk.bold(s)),
-  dim:    (s) => c.muted(s),
-};
-
-const SECTIONS: { label: string; commands: CmdEntry[] }[] = [
-  {
-    label: 'Setup',
-    commands: [
-      { name: 'login',   desc: 'Authenticate with Expo, Apple & Google Play', color: 'green' },
-      { name: 'init',    desc: 'Detect project and create config',            color: 'cyan' },
-      { name: 'doctor',  desc: 'Run 23 health checks on your project',       color: 'cyan' },
-    ],
-  },
-  {
-    label: 'Store Prep',
-    commands: [
-      { name: 'audit',   desc: 'Static analysis for store readiness',         color: 'yellow' },
-      { name: 'assets',  desc: 'Process icons, splash screens, screenshots',  color: 'cyan' },
-      { name: 'prepare', desc: 'Generate store metadata & privacy policy',    color: 'cyan' },
-    ],
-  },
-  {
-    label: 'Build & Deploy',
-    commands: [
-      { name: 'build',   desc: 'Trigger cloud build via EAS',                 color: 'green' },
-      { name: 'status',  desc: 'Check build progress & history',              color: 'teal' },
-      { name: 'preview', desc: 'Preview links + QR codes for testing',        color: 'cyan' },
-      { name: 'submit',  desc: 'Submit to App Store / Play Store',            color: 'green' },
-    ],
-  },
-  {
-    label: 'Other',
-    commands: [
-      { name: 'mcp',     desc: 'Start MCP server for AI agents',              color: 'purple' },
-      { name: 'reset',   desc: 'Clear local config and start fresh',          color: 'dim' },
-    ],
-  },
-];
-
-function renderSections(): string {
-  const lines: string[] = [];
-  const nameWidth = 16; // 12 char name + 4 char gap
-
-  for (let i = 0; i < SECTIONS.length; i++) {
-    const section = SECTIONS[i]!;
-
-    // Thin divider before each section
-    lines.push(`  ${thinDivider(tw() - 4)}`);
-    lines.push('');
-    lines.push(`  ${sectionLabel(section.label)}`);
-    lines.push('');
-
-    for (const cmd of section.commands) {
-      const name = colorMap[cmd.color](cmd.name.padEnd(nameWidth));
-      const desc = c.textDim(cmd.desc);
-      lines.push(`  ${name}${desc}`);
-    }
-    lines.push('');
-  }
-
-  return lines.join('\n');
-}
-
-// ═══════════════════════════════════════════════════════════════
-// USAGE BLOCK — Box-drawing with surface background
-// ═══════════════════════════════════════════════════════════════
-
-function renderUsageBlock(): string {
-  const border = c.cyan;
-  const bg = chalk.bgHex(c.surface);
-  const label = (t: string) => c.dimLink(t.padEnd(8).toUpperCase());
-  const w = tw() - 6;
-
-  const padLine = (content: string) => {
-    const visible = stripAnsi(content).length;
-    const remaining = Math.max(0, w - visible - 2);
-    return bg(`${content}${' '.repeat(remaining)}`);
-  };
-
-  const topBorder =    `  ${border('╷')}`;
-  const line1 = `  ${border('│')}  ${padLine(`${label('Usage')}${c.cyan('shipmobile')} ${c.purple('<command>')} ${c.green('[options]')}`)}`;
-  const line2 = `  ${border('│')}  ${padLine(`${label('Help')}${c.cyan('shipmobile')} ${c.purple('<command>')} ${c.green('--help')}`)}`;
-  const bottomBorder = `  ${border('╵')}`;
-
-  return `${topBorder}\n${line1}\n${line2}\n${bottomBorder}`;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TITLE ART — Block letters (kept for future/verbose use)
-// ═══════════════════════════════════════════════════════════════
-
-export function getTitleArt(): string {
-  // figlet "Small" font — 4 lines tall, compact and clean
-  const raw = [
-    ' ___ _  _ ___ ___ __  __  ___  ___ ___ _    ___ ',
-    '/ __| || |_ _| _ \\  \\/  |/ _ \\| _ )_ _| |  | __|',
-    '\\__ \\ __ || ||  _/ |\\/| | (_) | _ \\| || |__| _| ',
-    '|___/_||_|___|_| |_|  |_|\\___/|___/___|____|___|',
-  ];
-  return raw.map(line => '  ' + titleGradient(line)).join('\n');
-}
-
-const TAGLINE = 'Your agent can build the app. ShipMobile ships it.';
-
-// ═══════════════════════════════════════════════════════════════
-// MAIN DISPLAY
-// ═══════════════════════════════════════════════════════════════
+// ── Main ──────────────────────────────────────────────────────────
 
 export function printCommandList(version = '0.1.0'): void {
-  console.log();
-  console.log(renderLogoBlock(version));
-  console.log();
-  console.log(`  ${chalk.italic(c.dimLink(TAGLINE))}`);
-  console.log();
-  console.log(getTitleArt());
-  console.log();
-  console.log(renderSections());
-  console.log(renderUsageBlock());
-  console.log();
+  const lines: string[] = [];
+
+  // Gradient top bar
+  lines.push(gradientBar());
+
+  // Logo block
+  lines.push(logoBlock(version));
+  lines.push('');
+
+  // Tagline
+  lines.push(chalk.italic.hex('#5a7a8a')('Your agent can build the app. ShipMobile ships it.'));
+  lines.push('');
+
+  // ASCII wordmark — commented out per spec (uncomment if renders cleanly at 4 lines)
+  // lines.push(getTitleArt());
+  // lines.push('');
+
+  lines.push(divider());
+
+  // SETUP
+  lines.push(sectionLabel('SETUP'));
+  lines.push(cmdRow(c.green, 'login', 'Authenticate with Expo, Apple & Google Play'));
+  lines.push(cmdRow(c.cyan, 'init', 'Detect project and create config'));
+  lines.push(cmdRow(c.cyan, 'doctor', 'Run 23 health checks on your project'));
+  lines.push(divider());
+
+  // STORE PREP
+  lines.push(sectionLabel('STORE PREP'));
+  lines.push(cmdRow(c.yellow, 'audit', 'Static analysis for store readiness'));
+  lines.push(cmdRow(c.cyan, 'assets', 'Process icons, splash screens, screenshots'));
+  lines.push(cmdRow(c.cyan, 'prepare', 'Generate store metadata & privacy policy'));
+  lines.push(divider());
+
+  // BUILD & DEPLOY
+  lines.push(sectionLabel('BUILD & DEPLOY'));
+  lines.push(cmdRow(c.green, 'build', 'Trigger cloud build via EAS'));
+  lines.push(cmdRow(c.teal, 'status', 'Check build progress & history'));
+  lines.push(cmdRow(c.cyan, 'preview', 'Preview links + QR codes for testing'));
+  lines.push(cmdRow(c.green, 'submit', 'Submit to App Store / Play Store'));
+  lines.push(divider());
+
+  // OTHER
+  lines.push(sectionLabel('OTHER'));
+  lines.push(cmdRow(c.purple, 'mcp', 'Start MCP server for AI agents'));
+  lines.push(cmdRow(c.dim, 'reset', 'Clear local config and start fresh'));
+  lines.push('');
+
+  lines.push(usageBox());
+  lines.push('');
+
+  console.log(lines.join('\n'));
 }
 
 export function printBanner(version = '0.1.0'): void {
   console.log();
-  console.log(renderLogoBlock(version));
+  console.log(gradientBar());
+  console.log(logoBlock(version));
   console.log();
-  console.log(`  ${chalk.italic(c.dimLink(TAGLINE))}`);
+  console.log(chalk.italic.hex('#5a7a8a')('Your agent can build the app. ShipMobile ships it.'));
   console.log();
 }
 
 export function printHeader(command: string, description?: string): void {
   console.log();
-  console.log(`  ${colors.brandBold('ShipMobile')} ${c.muted(figures.dot)} ${chalk.bold(command)}`);
+  console.log(`  ${colors.brandBold('ShipMobile')} ${c.dim(figures.dot)} ${chalk.bold(command)}`);
   if (description) {
-    console.log(`  ${c.textDim(description)}`);
+    console.log(`  ${c.muted(description)}`);
   }
-  console.log(`  ${thinDivider(52)}`);
+  console.log(`  ${c.border('─'.repeat(52))}`);
   console.log();
 }
 
-export const BANNER_PLAIN = `
-  ShipMobile — Your agent can build the app. ShipMobile ships it.
-`;
+// ASCII wordmark kept for future use
+export function getTitleArt(): string {
+  const lines = [
+    ' ___ _  _ ___ ___ __  __  ___  ___ ___ _    ___ ',
+    '/ __| || |_ _| _ \\  \\/  |/ _ \\| _ )_ _| |  | __|',
+    '\\__ \\ __ || ||  _/ |\\/| | (_) | _ \\| || |__| _| ',
+    '|___/_||_|___|_| |_|  |_|\\___/|___/___|____|___|',
+  ];
+  const gradient = require('gradient-string');
+  return lines.map(line => '  ' + gradient(['#38bdf8', '#22d3ee', '#2dd4bf'])(line)).join('\n');
+}
+
+export const BANNER_PLAIN = `ShipMobile — Your agent can build the app. ShipMobile ships it.`;
 
 export function getLobsterAscii(): string {
   return getPixelCrab().join('\n');
