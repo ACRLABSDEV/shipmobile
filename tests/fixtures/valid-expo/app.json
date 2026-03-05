@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "my-test-app",
+    "slug": "my-test-app",
+    "version": "1.0.0",
+    "sdkVersion": "52.0.0",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png"
+    },
+    "ios": {
+      "bundleIdentifier": "com.test.mytestapp"
+    },
+    "android": {
+      "package": "com.test.mytestapp"
+    }
+  }
+}

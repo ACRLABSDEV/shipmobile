@@ -1,0 +1,8 @@
+{
+  "name": "broken-app",
+  "version": "not-semver",
+  "dependencies": {
+    "expo": "~52.0.0",
+    "react-native": "0.73.0"
+  }
+}
