@@ -1,5 +1,13 @@
 /**
  * Credential encryption — AES-256-GCM at rest
+ *
+ * NOTE: This is local-only convenience encryption. It prevents plain-text
+ * credential storage on disk, which is the primary goal for v0.1. It is NOT
+ * meant to protect against targeted attacks — the key is derived from
+ * machine-local values that a determined attacker with local access could
+ * recover.
+ *
+ * TODO: Allow user-provided passphrase for stronger key derivation.
  */
 
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';

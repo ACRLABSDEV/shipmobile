@@ -16,6 +16,16 @@ describe('init', () => {
       // /tmp has no package.json
       expect(result).toBe('not-rn');
     });
+
+    it('detects expo bare workflow (has ios/ directory)', async () => {
+      const result = await detectWorkflow(join(FIXTURES, 'expo-bare'));
+      expect(result).toBe('expo-bare');
+    });
+
+    it('detects react-native-cli workflow (no expo dep)', async () => {
+      const result = await detectWorkflow(join(FIXTURES, 'rn-cli'));
+      expect(result).toBe('react-native-cli');
+    });
   });
 
   describe('execute', () => {

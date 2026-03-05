@@ -41,11 +41,11 @@ export async function loginExpo(
   cwd?: string,
 ): Promise<Result<LoginResult>> {
   const result = await expo.validateToken(input.token);
-  if (!result.ok) return result as unknown as Result<LoginResult>;
+  if (!result.ok) return err(result.error.code, result.error.message, result.error.severity, result.error.suggestion);
 
   const account = result.data;
   const credResult = await readCredentials(cwd);
-  if (!credResult.ok) return credResult as unknown as Result<LoginResult>;
+  if (!credResult.ok) return err(credResult.error.code, credResult.error.message, credResult.error.severity, credResult.error.suggestion);
 
   const creds: CredentialData = { ...credResult.data };
   creds.expo = {
@@ -57,7 +57,7 @@ export async function loginExpo(
   };
 
   const writeResult = await writeCredentials(creds, cwd);
-  if (!writeResult.ok) return writeResult as unknown as Result<LoginResult>;
+  if (!writeResult.ok) return err(writeResult.error.code, writeResult.error.message, writeResult.error.severity, writeResult.error.suggestion);
 
   return ok({
     authenticated: {
@@ -81,11 +81,11 @@ export async function loginApple(
     issuerId: input.issuerId,
     keyPath: input.keyPath,
   });
-  if (!result.ok) return result as unknown as Result<LoginResult>;
+  if (!result.ok) return err(result.error.code, result.error.message, result.error.severity, result.error.suggestion);
 
   const account = result.data;
   const credResult = await readCredentials(cwd);
-  if (!credResult.ok) return credResult as unknown as Result<LoginResult>;
+  if (!credResult.ok) return err(credResult.error.code, credResult.error.message, credResult.error.severity, credResult.error.suggestion);
 
   const creds: CredentialData = { ...credResult.data };
   creds.apple = {
@@ -98,7 +98,7 @@ export async function loginApple(
   };
 
   const writeResult = await writeCredentials(creds, cwd);
-  if (!writeResult.ok) return writeResult as unknown as Result<LoginResult>;
+  if (!writeResult.ok) return err(writeResult.error.code, writeResult.error.message, writeResult.error.severity, writeResult.error.suggestion);
 
   return ok({
     authenticated: {
@@ -118,11 +118,11 @@ export async function loginGoogle(
   cwd?: string,
 ): Promise<Result<LoginResult>> {
   const result = await google.validateServiceAccount(input.serviceAccountPath);
-  if (!result.ok) return result as unknown as Result<LoginResult>;
+  if (!result.ok) return err(result.error.code, result.error.message, result.error.severity, result.error.suggestion);
 
   const account = result.data;
   const credResult = await readCredentials(cwd);
-  if (!credResult.ok) return credResult as unknown as Result<LoginResult>;
+  if (!credResult.ok) return err(credResult.error.code, credResult.error.message, credResult.error.severity, credResult.error.suggestion);
 
   const creds: CredentialData = { ...credResult.data };
   creds.google = {
@@ -133,7 +133,7 @@ export async function loginGoogle(
   };
 
   const writeResult = await writeCredentials(creds, cwd);
-  if (!writeResult.ok) return writeResult as unknown as Result<LoginResult>;
+  if (!writeResult.ok) return err(writeResult.error.code, writeResult.error.message, writeResult.error.severity, writeResult.error.suggestion);
 
   return ok({
     authenticated: {
@@ -150,7 +150,7 @@ export async function loginGoogle(
 
 export async function getStatus(cwd?: string): Promise<Result<LoginResult>> {
   const credResult = await readCredentials(cwd);
-  if (!credResult.ok) return credResult as unknown as Result<LoginResult>;
+  if (!credResult.ok) return err(credResult.error.code, credResult.error.message, credResult.error.severity, credResult.error.suggestion);
 
   const creds = credResult.data;
   const issues: string[] = [];

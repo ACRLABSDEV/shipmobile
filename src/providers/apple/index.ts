@@ -3,7 +3,8 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { sign } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+const { sign } = jwt;
 import { ok, err, type Result } from '../../utils/result.js';
 
 export interface AppleAccount {
