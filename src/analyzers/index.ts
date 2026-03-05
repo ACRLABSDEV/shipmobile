@@ -1,4 +1,8 @@
 /**
- * Analyzers — coming in Phase 2
+ * Analyzers — Audit engine for static analysis
  */
-export {};
+
+export * from './types.js';
+export * from './ast.js';
+export * from './discovery.js';
+export { allRules, getRulesByCategory, getRuleById } from './rules/index.js';

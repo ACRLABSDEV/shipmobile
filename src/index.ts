@@ -9,10 +9,11 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { printBanner, printHeader, printCommandList } from './cli/banner.js';
 import { renderComingSoon } from './cli/renderer.js';
-import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult } from './cli/renderer.js';
+import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult } from './cli/renderer.js';
 import * as login from './core/login.js';
 import * as init from './core/init.js';
 import * as doctor from './core/doctor.js';
+import * as audit from './core/audit/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -166,8 +167,27 @@ program
     renderDoctorResult(result);
   });
 
+// === AUDIT ===
+program
+  .command('audit')
+  .description('Run static analysis audit on your project')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('-c, --category <category>', 'Run specific category (performance, memory, ux, compliance, security)')
+  .option('--fix', 'Auto-fix issues where possible')
+  .option('--diff', 'Compare with previous audit')
+  .action(async (options: { path: string; category?: string; fix?: boolean; diff?: boolean }) => {
+    printHeader('App Audit');
+    const result = await audit.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      category: options.category,
+      fix: options.fix,
+      diff: options.diff,
+    });
+    renderAuditResult(result);
+  });
+
 // === PLACEHOLDER COMMANDS ===
-for (const cmd of ['audit', 'assets', 'prepare', 'build', 'status', 'preview', 'submit']) {
+for (const cmd of ['assets', 'prepare', 'build', 'status', 'preview', 'submit']) {
   program
     .command(cmd)
     .description(`${cmd} — coming soon`)

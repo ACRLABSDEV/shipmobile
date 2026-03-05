@@ -5,6 +5,7 @@
 import * as login from '../core/login.js';
 import * as init from '../core/init.js';
 import * as doctor from '../core/doctor.js';
+import * as audit from '../core/audit/index.js';
 
 function jsonResponse(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -79,6 +80,22 @@ export async function handleDoctor(args: {
   const result = await doctor.execute({
     projectPath: args.project_path,
     fix: args.fix,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handleAudit(args: {
+  project_path?: string;
+  category?: string;
+  fix?: boolean;
+  diff?: boolean;
+}) {
+  const result = await audit.execute({
+    projectPath: args.project_path,
+    category: args.category,
+    fix: args.fix,
+    diff: args.diff,
   });
   if (!result.ok) return errorResponse(result.error.message);
   return jsonResponse(result.data);

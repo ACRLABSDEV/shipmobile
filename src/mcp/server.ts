@@ -5,7 +5,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { handleLogin, handleInit, handleDoctor } from './handlers.js';
+import { handleLogin, handleInit, handleDoctor, handleAudit } from './handlers.js';
 
 export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
@@ -50,9 +50,20 @@ export async function startMcpServer(): Promise<void> {
     handleDoctor,
   );
 
+  server.tool(
+    'shipmobile_audit',
+    'Run static analysis audit for store readiness — returns score, findings, and metrics',
+    {
+      project_path: z.string().optional().describe('Project path to audit'),
+      category: z.string().optional().describe('Filter by category: performance, memory, ux, compliance, security'),
+      fix: z.boolean().optional().describe('Auto-fix issues where possible'),
+      diff: z.boolean().optional().describe('Compare with previous audit'),
+    },
+    handleAudit,
+  );
+
   // Stub tools for future phases
   for (const [name, desc] of [
-    ['shipmobile_audit', 'Static analysis for store readiness'],
     ['shipmobile_build', 'Trigger EAS build'],
     ['shipmobile_status', 'Check build progress'],
     ['shipmobile_submit', 'Submit to App Store / Play Store'],

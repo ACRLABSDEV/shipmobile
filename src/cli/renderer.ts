@@ -6,6 +6,8 @@ import type { Result } from '../utils/result.js';
 import type { LoginResult } from '../core/login.js';
 import type { InitResult } from '../core/init.js';
 import type { DoctorResult } from '../core/doctor.js';
+import type { AuditResult } from '../core/audit/index.js';
+import type { AuditFinding } from '../analyzers/types.js';
 import * as theme from './theme.js';
 
 export function renderResult<T>(result: Result<T>, formatter?: (data: T) => string): void {
@@ -200,4 +202,115 @@ export function renderDoctorResult(result: Result<DoctorResult>): void {
     console.log(`\n  ${theme.icons.tip} Run \`shipmobile doctor --fix\` to auto-fix what's possible.`);
   }
   console.log();
+}
+
+export function renderAuditResult(result: Result<AuditResult & { _fixedCount?: number; _previous?: AuditResult }>): void {
+  if (!result.ok) {
+    console.log(`  ${theme.icons.error} ${theme.colors.error(result.error.message)}`);
+    if (result.error.suggestion) {
+      console.log(`  ${theme.icons.tip} ${result.error.suggestion}`);
+    }
+    console.log();
+    return;
+  }
+
+  const data = result.data;
+  const { score, critical, warnings, info, metrics, findings } = data;
+
+  console.log();
+  console.log(theme.heading('  📱 ShipMobile — App Audit Report'));
+  console.log(`  ${theme.divider()}`);
+  console.log();
+
+  // Score
+  const scoreColor = score >= 80 ? theme.colors.success : score >= 50 ? theme.colors.warning : theme.colors.error;
+  console.log(`  Score: ${scoreColor(`${score}/100`)}`);
+  console.log();
+
+  // Summary
+  const passed = metrics.rulesRun - new Set(findings.map((f: AuditFinding) => f.ruleId)).size;
+  console.log(`  ${theme.icons.success} ${passed} rules passed`);
+  if (warnings.length > 0) console.log(`  ${theme.icons.warning}  ${theme.colors.warning(`${warnings.length} warnings`)}`);
+  if (critical.length > 0) console.log(`  ${theme.icons.error} ${theme.colors.error(`${critical.length} critical`)}`);
+  if (info.length > 0) console.log(`  ${theme.colors.dim(`ℹ  ${info.length} info`)}`);
+  console.log();
+
+  // Critical findings
+  if (critical.length > 0) {
+    console.log(`  ${theme.colors.error(theme.colors.bold('❌ CRITICAL'))}`);
+    const grouped = groupFindings(critical);
+    for (const [, items] of grouped) {
+      const first = items[0]!;
+      const fileCount = items.filter((f: AuditFinding) => f.file).length;
+      const msg = fileCount > 0 ? `${first.message} (${fileCount} occurrences)` : first.message;
+      console.log(`    ${msg}`);
+      if (first.suggestion) console.log(`    ${theme.icons.arrow} ${theme.colors.dim(first.suggestion)}`);
+      const fileList = items.filter((f: AuditFinding) => f.file).slice(0, 3);
+      if (fileList.length > 0) {
+        const locs = fileList.map((f: AuditFinding) => `${f.file}${f.line ? `:${f.line}` : ''}`).join(', ');
+        console.log(`    ${theme.colors.dim(locs)}${items.length > 3 ? theme.colors.dim(` +${items.length - 3} more`) : ''}`);
+      }
+    }
+    console.log();
+  }
+
+  // Warnings
+  if (warnings.length > 0) {
+    console.log(`  ${theme.colors.warning(theme.colors.bold('⚠️  WARNINGS'))}`);
+    const grouped = groupFindings(warnings);
+    for (const [, items] of grouped) {
+      const first = items[0]!;
+      console.log(`    ${first.message}${items.length > 1 ? ` (${items.length} occurrences)` : ''}`);
+      if (first.suggestion) console.log(`    ${theme.icons.arrow} ${theme.colors.dim(first.suggestion)}`);
+    }
+    console.log();
+  }
+
+  // Info / suggestions
+  if (info.length > 0) {
+    console.log(`  ${theme.colors.info(theme.colors.bold('💡 SUGGESTIONS'))}`);
+    const grouped = groupFindings(info);
+    for (const [, items] of grouped) {
+      const first = items[0]!;
+      console.log(`    ${first.message}`);
+      if (first.suggestion) console.log(`    ${theme.icons.arrow} ${theme.colors.dim(first.suggestion)}`);
+    }
+    console.log();
+  }
+
+  // Diff with previous
+  if (data._previous) {
+    const prev = data._previous;
+    const diff = score - prev.score;
+    const diffStr = diff > 0 ? theme.colors.success(`+${diff}`) : diff < 0 ? theme.colors.error(`${diff}`) : theme.colors.dim('±0');
+    console.log(`  ${theme.colors.bold('📊 Diff:')} ${prev.score} → ${score} (${diffStr})`);
+    console.log();
+  }
+
+  // Fix count
+  if (data._fixedCount && data._fixedCount > 0) {
+    console.log(`  ${theme.icons.success} Auto-fixed ${data._fixedCount} issues`);
+    console.log();
+  }
+
+  // Fixable count
+  const fixable = findings.filter((f: AuditFinding) => f.autoFixable).length;
+  if (fixable > 0) {
+    console.log(`  Run \`shipmobile audit --fix\` to auto-fix ${fixable} issues.`);
+    console.log();
+  }
+
+  // Metrics
+  console.log(`  ${theme.colors.dim(`${metrics.totalFiles} files scanned · ${metrics.rulesRun} rules run · ${metrics.duration}ms`)}`);
+  console.log();
+}
+
+function groupFindings(findings: AuditFinding[]): Map<string, AuditFinding[]> {
+  const map = new Map<string, AuditFinding[]>();
+  for (const f of findings) {
+    const existing = map.get(f.ruleId);
+    if (existing) existing.push(f);
+    else map.set(f.ruleId, [f]);
+  }
+  return map;
 }
