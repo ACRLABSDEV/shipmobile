@@ -7,7 +7,7 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { printBanner, printHeader, printCommandList } from './cli/banner.js';
+import { printHeader, printCommandList } from './cli/banner.js';
 import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult, renderAssetsResult, renderPrepareResult, renderBuildResult, renderStatusResult, renderPreviewResult, renderSubmitResult, renderResetResult } from './cli/renderer.js';
 import * as login from './core/login.js';
 import * as init from './core/init.js';
@@ -42,12 +42,13 @@ program
   .description('Ship React Native/Expo apps to App Store & Play Store')
   .version(version, '-v, --version')
   .addHelpText('beforeAll', () => {
-    printBanner(version);
+    // Note: Commander doesn't support async helpText callbacks well,
+    // so banner uses sync fallback in help mode
     return '';
   })
-  .action(() => {
+  .action(async () => {
     // Bare `shipmobile` with no command — show branded command list
-    printCommandList(version);
+    await printCommandList(version);
   });
 
 // === LOGIN ===

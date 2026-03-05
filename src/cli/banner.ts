@@ -6,6 +6,10 @@
  */
 
 import chalk from 'chalk';
+import terminalImage from 'terminal-image';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { figures, colors } from './theme.js';
 
 // ── Palette (exact hex values from the reference) ──────────────────
@@ -81,9 +85,24 @@ function stripAnsi(str: string): string {
   return str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1B\][^\x07]*\x07/g, '').replace(/\x1B_[^\x1B]*\x1B\\/g, '');
 }
 
-// ── Logo block — crab side-by-side with text ──────────────────────
-function logoBlock(version: string): string {
-  const crabLines = getPixelCrab();
+// ── Render mascot via terminal-image (constrained to 10 cols × 5 rows) ──
+async function renderMascot(): Promise<string[]> {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const spritePath = join(__dirname, '..', 'assets', 'sailor-sprite-transparent.png');
+    const img = readFileSync(spritePath);
+    const rendered = await terminalImage.buffer(img, { width: 10, height: 5 });
+    return rendered.trimEnd().split('\n');
+  } catch {
+    // Fallback to half-block pixel crab if terminal-image fails
+    return getPixelCrab();
+  }
+}
+
+// ── Logo block — mascot side-by-side with text ──────────────────────
+async function logoBlock(version: string): Promise<string> {
+  const mascotLines = await renderMascot();
   const textLines = [
     c.label('ACR LABS'),
     chalk.hex('#22d3ee').bold('ShipMobile'),
@@ -91,16 +110,16 @@ function logoBlock(version: string): string {
     '',
     '',
   ];
-  const CRAB_WIDTH = 10;
+  const MASCOT_WIDTH = 10;
   const GAP = '  ';
   const result: string[] = [];
-  const maxLines = Math.max(crabLines.length, textLines.length);
+  const maxLines = Math.max(mascotLines.length, textLines.length);
   for (let i = 0; i < maxLines; i++) {
-    const crab = i < crabLines.length ? crabLines[i]! : ' '.repeat(CRAB_WIDTH);
+    const mascot = i < mascotLines.length ? mascotLines[i]! : ' '.repeat(MASCOT_WIDTH);
     const text = i < textLines.length ? textLines[i]! : '';
-    const crabVisible = stripAnsi(crab).length;
-    const pad = ' '.repeat(Math.max(0, CRAB_WIDTH - crabVisible));
-    result.push(`${crab}${pad}${GAP}${text}`);
+    const mascotVisible = stripAnsi(mascot).length;
+    const pad = ' '.repeat(Math.max(0, MASCOT_WIDTH - mascotVisible));
+    result.push(`${mascot}${pad}${GAP}${text}`);
   }
   return result.join('\n');
 }
@@ -123,14 +142,14 @@ function usageBox(): string {
 
 // ── Main ──────────────────────────────────────────────────────────
 
-export function printCommandList(version = '0.1.0'): void {
+export async function printCommandList(version = '0.1.0'): Promise<void> {
   const lines: string[] = [];
 
   // Gradient top bar
   lines.push(gradientBar());
 
   // Logo block
-  lines.push(logoBlock(version));
+  lines.push(await logoBlock(version));
   lines.push('');
 
   // Tagline
@@ -177,10 +196,10 @@ export function printCommandList(version = '0.1.0'): void {
   console.log(lines.join('\n'));
 }
 
-export function printBanner(version = '0.1.0'): void {
+export async function printBanner(version = '0.1.0'): Promise<void> {
   console.log();
   console.log(gradientBar());
-  console.log(logoBlock(version));
+  console.log(await logoBlock(version));
   console.log();
   console.log(chalk.italic.hex('#5a7a8a')('Your agent can build the app. ShipMobile ships it.'));
   console.log();
