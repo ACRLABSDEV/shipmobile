@@ -104,11 +104,20 @@ export function getLobsterAscii(): string {
 // TITLE
 // ═══════════════════════════════════════════════════════════════
 
-/** Compact gradient title — no massive figlet, just bold gradient text */
+/** ASCII art title — compact block letters with gradient */
+function getTitleArt(): string {
+  const raw = [
+    ' ╔═╗╦ ╦╦╔═╗╔╦╗╔═╗╔╗ ╦╦  ╔═╗',
+    ' ╚═╗╠═╣║╠═╝║║║║ ║╠╩╗║║  ║╣ ',
+    ' ╚═╝╩ ╩╩╩  ╩ ╩╚═╝╚═╝╩╩═╝╚═╝',
+  ];
+  return raw.map(line => '  ' + shipGradient(line)).join('\n');
+}
+
 function renderTitle(version: string): string {
-  const title = shipGradient('ShipMobile');
-  const ver = colors.dim(`v${version}`);
-  return `  ${title} ${ver}`;
+  const art = getTitleArt();
+  const ver = colors.dim(`  v${version}`);
+  return `${art}\n${ver}`;
 }
 
 const TAGLINE = 'Ship React Native apps to the stores.';
@@ -203,5 +212,11 @@ export function printHeader(command: string): void {
 
 /** Plain text for MCP/logs (no ANSI) */
 export const BANNER_PLAIN = `
-  ShipMobile — Ship React Native apps to the stores.
+  ╔═╗╦ ╦╦╔═╗╔╦╗╔═╗╔╗ ╦╦  ╔═╗
+  ╚═╗╠═╣║╠═╝║║║║ ║╠╩╗║║  ║╣
+  ╚═╝╩ ╩╩╩  ╩ ╩╚═╝╚═╝╩╩═╝╚═╝
+
+  Ship React Native apps to the stores.
 `;
+
+export { getTitleArt };
