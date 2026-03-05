@@ -1,0 +1,41 @@
+---
+title: "preview"
+description: "Generate shareable preview links and QR codes."
+---
+
+# shipmobile preview
+
+Generates TestFlight and APK download links with QR codes rendered right in your terminal.
+
+```bash
+shipmobile preview
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `--build-id <id>` | Specific build ID | Latest |
+| `--platform <platform>` | Filter by platform (`ios` or `android`) | Both |
+
+## Link Types
+
+Depending on your build, you'll get:
+
+- **TestFlight** — iOS internal testing link
+- **APK / AAB** — Direct download for Android
+- **EAS Artifact** — EAS-hosted build artifact
+- **Internal Track** — Google Play internal testing
+
+Each link includes a QR code you can scan or share.
+
+## Examples
+
+```bash
+# Preview latest build
+shipmobile preview
+
+# iOS only
+shipmobile preview --platform ios
+```

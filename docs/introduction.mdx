@@ -1,0 +1,54 @@
+---
+title: "Introduction"
+description: "Ship React Native/Expo apps to the App Store and Play Store — from your terminal or an AI agent."
+---
+
+# ShipMobile 🦞
+
+**Your agent can build the app. ShipMobile ships it.**
+
+Every day, thousands of people use AI tools to build mobile apps. The code gets written in minutes. Then they hit the wall: code signing, provisioning profiles, store metadata, screenshot requirements, build pipelines, submission rules.
+
+ShipMobile eliminates that wall. One CLI. One MCP server. From code to App Store.
+
+## Who is this for?
+
+<CardGroup cols={3}>
+  <Card title="Vibe Coders" icon="wand-magic-sparkles">
+    You prompted an app into existence but have no idea how provisioning profiles work.
+  </Card>
+  <Card title="AI Agents" icon="robot">
+    Cursor, Claude, OpenClaw, Windsurf — agents that need to complete the deployment lifecycle.
+  </Card>
+  <Card title="Indie Devs" icon="code">
+    You've done this 100 times and still hate every second of it.
+  </Card>
+</CardGroup>
+
+## Key Features
+
+- **🔐 Login** — Connect Apple, Expo/EAS, and Google Play in one flow
+- **🔍 Init** — Auto-detect project type, scaffold config
+- **🩺 Doctor** — 23 health checks across structure, config, assets, accounts, build readiness, and dependencies
+- **📊 Audit** — 25 static analysis rules with a 0–100 score and auto-fix
+- **🖼️ Assets** — Validate icons, splash screens, screenshots
+- **📝 Prepare** — Generate store metadata, keywords, privacy policies
+- **🔨 Build** — Trigger EAS builds with pre-validation
+- **📡 Status** — Real-time build progress in your terminal
+- **📱 Preview** — TestFlight links and QR codes
+- **🚀 Submit** — Push to App Store Connect and Google Play
+- **🤖 MCP Server** — Every command available as a structured tool for AI agents
+
+## Quick Install
+
+```bash
+# Run directly
+npx shipmobile
+
+# Or install globally
+npm install -g shipmobile
+```
+
+<Note>
+  Requires Node.js 18+. Works with React Native and Expo projects.
+</Note>

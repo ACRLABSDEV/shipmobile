@@ -1,0 +1,48 @@
+---
+title: "build"
+description: "Trigger EAS builds for iOS and Android."
+---
+
+# shipmobile build
+
+Triggers cloud builds via EAS. Runs pre-build validation (doctor checks) by default.
+
+```bash
+shipmobile build
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `--platform <platforms...>` | Target platforms (`ios`, `android`) | Both |
+| `--profile <profile>` | Build profile | `production` |
+| `--wait` | Wait for build to complete | `false` |
+| `--skip-validation` | Skip pre-build doctor checks | `false` |
+
+Profiles: `development`, `preview`, `production`
+
+## Examples
+
+```bash
+# Build both platforms (production)
+shipmobile build
+
+# iOS preview build, wait for completion
+shipmobile build --platform ios --profile preview --wait
+
+# Skip doctor checks
+shipmobile build --skip-validation
+```
+
+## What happens
+
+1. Runs `shipmobile doctor` checks (unless `--skip-validation`)
+2. Resolves platforms and build profile from `eas.json`
+3. Triggers EAS build
+4. Returns build IDs for tracking with `shipmobile status`
+
+<Note>
+  Requires Expo/EAS account connected via `shipmobile login`. EAS CLI must be available on PATH.
+</Note>

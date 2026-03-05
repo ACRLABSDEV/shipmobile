@@ -1,0 +1,102 @@
+---
+title: "audit"
+description: "Static analysis with 25 rules across 5 categories. Get a 0–100 score."
+---
+
+# shipmobile audit
+
+Deep static analysis of your project for store readiness. Produces a 0–100 score with actionable findings.
+
+```bash
+shipmobile audit
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `-c, --category <cat>` | Run specific category only | All |
+| `--fix` | Auto-fix issues where possible | `false` |
+| `--diff` | Compare with previous audit | `false` |
+
+Categories: `performance`, `memory`, `ux`, `compliance`, `security`
+
+## Scoring
+
+- **Critical** finding: −10 points
+- **Warning** finding: −3 points
+- **Info** finding: −1 point
+- Starting score: 100. Minimum: 0.
+
+## All 25 Rules
+
+### Performance (5 rules)
+
+| Rule | Description |
+|------|-------------|
+| `bundle-size` | Checks overall bundle/dependency weight |
+| `heavy-deps` | Flags heavy dependencies that bloat the app |
+| `unused-imports` | Detects unused import statements |
+| `large-images` | Finds oversized image assets |
+| `hermes-check` | Verifies Hermes engine is enabled |
+
+### Memory (5 rules)
+
+| Rule | Description |
+|------|-------------|
+| `useeffect-cleanup` | Missing cleanup functions in `useEffect` |
+| `uncleared-timers` | `setTimeout`/`setInterval` without cleanup |
+| `event-listener-leak` | Event listeners without removal |
+| `flatlist-usage` | Large lists not using `FlatList` |
+| `native-driver` | Animations not using `useNativeDriver` |
+
+### UX (6 rules)
+
+| Rule | Description |
+|------|-------------|
+| `touch-target-size` | Touch targets below 44×44pt minimum |
+| `font-size-minimum` | Font sizes below readable threshold |
+| `safe-area` | Missing `SafeAreaView` usage |
+| `keyboard-avoidance` | Forms without `KeyboardAvoidingView` |
+| `dark-mode` | No dark mode support detected |
+| `accessibility-labels` | Interactive elements missing accessibility labels |
+
+### Compliance (6 rules)
+
+| Rule | Description |
+|------|-------------|
+| `no-console-log` | `console.log` statements left in code |
+| `hardcoded-secrets` | API keys or secrets in source code |
+| `unused-permissions` | Permissions declared but not used |
+| `missing-permissions` | APIs used without declaring permissions |
+| `privacy-manifest` | Missing iOS privacy manifest |
+| `version-production` | Version number sanity for production |
+
+### Security (3 rules)
+
+| Rule | Description |
+|------|-------------|
+| `hardcoded-urls` | Hardcoded API URLs (should use env vars) |
+| `debug-flags` | Debug flags left enabled |
+| `exposed-env` | `.env` files or secrets exposed in bundle |
+
+## Auto-Fix
+
+```bash
+shipmobile audit --fix
+```
+
+Rules with a `fix` function will automatically remediate issues (e.g., removing `console.log` statements). The audit re-runs after fixes to give you an updated score.
+
+## Diff Mode
+
+```bash
+shipmobile audit --diff
+```
+
+Compares the current audit against the last saved result in `.shipmobile/audit-history/latest.json`. Shows score delta and new/resolved findings.
+
+<Tip>
+  Run `shipmobile audit --category security` before every commit to catch leaked secrets early.
+</Tip>

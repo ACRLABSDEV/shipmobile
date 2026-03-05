@@ -1,0 +1,74 @@
+---
+title: "Quickstart"
+description: "Go from zero to App Store in 7 commands."
+---
+
+# Quickstart
+
+<Steps>
+  <Step title="Install ShipMobile">
+    ```bash
+    npm install -g shipmobile
+    ```
+    Or run directly with `npx shipmobile`.
+  </Step>
+
+  <Step title="Connect your accounts">
+    ```bash
+    shipmobile login
+    ```
+    The interactive wizard walks you through connecting Expo/EAS, Apple Developer, and Google Play. Credentials are stored locally in `.shipmobile/`.
+  </Step>
+
+  <Step title="Initialize your project">
+    ```bash
+    shipmobile init
+    ```
+    Auto-detects your project type (Expo managed, bare, or React Native CLI), sets up `eas.json`, and configures bundle IDs.
+  </Step>
+
+  <Step title="Run health checks">
+    ```bash
+    shipmobile doctor
+    ```
+    Runs 23 checks covering project structure, config, assets, accounts, and build readiness. Use `--fix` to auto-repair common issues.
+  </Step>
+
+  <Step title="Audit your app">
+    ```bash
+    shipmobile audit
+    ```
+    Static analysis across performance, memory, UX, compliance, and security. Get a 0–100 score with actionable fixes.
+  </Step>
+
+  <Step title="Build">
+    ```bash
+    shipmobile build
+    ```
+    Triggers EAS builds for iOS and Android. Track progress with `shipmobile status`.
+  </Step>
+
+  <Step title="Ship it">
+    ```bash
+    shipmobile preview   # QR codes for TestFlight / APK
+    shipmobile submit    # Push to App Store & Play Store
+    ```
+  </Step>
+</Steps>
+
+## Agent Workflow
+
+If you're an AI agent using MCP, the flow looks like this:
+
+```
+shipmobile_init()     → detect project, set config
+shipmobile_doctor()   → find issues → fix them
+shipmobile_audit()    → score 82 → fix → 94
+shipmobile_prepare()  → generate metadata
+shipmobile_build()    → trigger EAS build
+shipmobile_status()   → poll until complete
+shipmobile_preview()  → get TestFlight link
+shipmobile_submit()   → ship to stores
+```
+
+Zero human steps between "I have an idea" and "it's on TestFlight."

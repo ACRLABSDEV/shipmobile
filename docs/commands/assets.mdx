@@ -1,0 +1,52 @@
+---
+title: "assets"
+description: "Validate and process app icons, splash screens, and screenshots."
+---
+
+# shipmobile assets
+
+Validates your app assets and generates all required icon sizes from a single source file.
+
+```bash
+shipmobile assets
+```
+
+## Options
+
+| Flag | Description |
+|------|-------------|
+| `-p, --path <path>` | Project path (default: `.`) |
+| `--icon <iconPath>` | Path to source icon (≥1024×1024 PNG) |
+| `--splash <splashPath>` | Path to splash screen image |
+| `--screenshots <dir>` | Path to screenshots directory |
+| `--foreground <path>` | Android adaptive icon foreground layer |
+| `--background <path>` | Android adaptive icon background layer |
+
+## What it does
+
+- **iOS icons** — Generates all required sizes (20pt through 1024pt at 1x/2x/3x scales) from your source icon
+- **Android icons** — Generates mdpi through xxxhdpi (48px–192px)
+- **Android adaptive icons** — Processes foreground and background layers separately
+- **Splash screen** — Validates dimensions and format
+- **Screenshots** — Validates screenshot directory structure
+
+## Examples
+
+```bash
+# Validate existing assets
+shipmobile assets
+
+# Process a specific icon
+shipmobile assets --icon ./design/app-icon.png
+
+# Full asset setup
+shipmobile assets \
+  --icon ./assets/icon.png \
+  --splash ./assets/splash.png \
+  --foreground ./assets/adaptive-foreground.png \
+  --background ./assets/adaptive-background.png
+```
+
+<Warning>
+  Source icon must be at least 1024×1024 pixels and PNG format. Square aspect ratio required.
+</Warning>

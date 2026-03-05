@@ -1,0 +1,52 @@
+---
+title: "submit"
+description: "Submit builds to App Store Connect and Google Play."
+---
+
+# shipmobile submit
+
+Uploads your build and metadata to the stores. Runs pre-flight checks to ensure everything is complete.
+
+```bash
+shipmobile submit
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `--platform <platform>` | Target platform (`ios` or `android`) | Both |
+| `--track <track>` | Google Play track | `production` |
+| `--skip-preflight` | Skip pre-flight checks | `false` |
+
+Google Play tracks: `internal`, `alpha`, `beta`, `production`
+
+## Pre-Flight Checks
+
+Before submission, ShipMobile validates:
+
+- Build exists and completed successfully
+- Store credentials are connected and valid
+- Metadata is complete (name, description, screenshots)
+- Assets meet store requirements
+- Version numbers are sane
+
+Use `--skip-preflight` to bypass (not recommended).
+
+## Examples
+
+```bash
+# Submit both platforms
+shipmobile submit
+
+# Submit to Google Play beta track
+shipmobile submit --platform android --track beta
+
+# iOS only, skip checks
+shipmobile submit --platform ios --skip-preflight
+```
+
+<Warning>
+  Make sure you've run `shipmobile prepare` and `shipmobile assets` before submitting. Incomplete metadata will be rejected by the stores.
+</Warning>

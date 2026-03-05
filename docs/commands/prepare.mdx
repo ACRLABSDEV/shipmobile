@@ -1,0 +1,52 @@
+---
+title: "prepare"
+description: "Generate and validate app store metadata."
+---
+
+# shipmobile prepare
+
+Scans your project and generates store metadata — descriptions, keywords, category, and privacy policy templates.
+
+```bash
+shipmobile prepare
+```
+
+## Options
+
+| Flag | Description |
+|------|-------------|
+| `-p, --path <path>` | Project path (default: `.`) |
+| `--name <name>` | App name override |
+| `--description <desc>` | App description override |
+| `--keywords <keywords...>` | Keywords override |
+| `--category <category>` | App category override |
+
+## Character Limits
+
+ShipMobile validates against store limits:
+
+| Field | Limit |
+|-------|-------|
+| Title | 30 characters |
+| Subtitle | 30 characters |
+| Short description | 80 characters |
+| Long description | 4,000 characters |
+| Keywords | 100 characters total (comma-separated) |
+
+## Banned Keywords
+
+Apple rejects apps with superlative keywords. ShipMobile flags terms like "free", "best", "#1", "top", "amazing", "revolutionary", "guaranteed", and others.
+
+## Examples
+
+```bash
+# Auto-generate from project
+shipmobile prepare
+
+# Override specific fields
+shipmobile prepare --name "My App" --category "Productivity"
+```
+
+<Tip>
+  Generated metadata is saved to `.shipmobile/metadata/`. Review and edit before submitting.
+</Tip>

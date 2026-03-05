@@ -1,0 +1,133 @@
+---
+title: "Tools Reference"
+description: "All 11 MCP tools available to AI agents."
+---
+
+# MCP Tools Reference
+
+Every ShipMobile command is exposed as an MCP tool with typed parameters and structured responses.
+
+## shipmobile_login
+
+Authenticate with app store providers.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | `"expo" \| "apple" \| "google"` | Yes | Which provider to authenticate |
+| `expo_token` | `string` | No | Expo access token |
+| `apple_key_id` | `string` | No | App Store Connect API Key ID |
+| `apple_issuer_id` | `string` | No | App Store Connect Issuer ID |
+| `apple_key_path` | `string` | No | Path to `.p8` key file |
+| `google_service_account` | `string` | No | Path to service account JSON |
+| `project_path` | `string` | No | Project path for credential storage |
+| `status` | `boolean` | No | Return connection status only |
+
+## shipmobile_init
+
+Initialize or detect project configuration.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `bundle_id` | `string` | No | Bundle ID override |
+| `platforms` | `("ios" \| "android")[]` | No | Target platforms |
+
+## shipmobile_doctor
+
+Run project health checks.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `fix` | `boolean` | No | Auto-fix issues |
+
+## shipmobile_audit
+
+Run static analysis audit.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `category` | `string` | No | Filter: `performance`, `memory`, `ux`, `compliance`, `security` |
+| `fix` | `boolean` | No | Auto-fix issues |
+| `diff` | `boolean` | No | Compare with previous audit |
+
+Returns: `score` (0–100), `findings[]`, `metrics`.
+
+## shipmobile_assets
+
+Validate and process app assets.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `icon_path` | `string` | No | Source icon path (≥1024×1024) |
+| `splash_path` | `string` | No | Splash screen path |
+| `screenshots_dir` | `string` | No | Screenshots directory |
+| `foreground_path` | `string` | No | Android adaptive icon foreground |
+| `background_path` | `string` | No | Android adaptive icon background |
+
+## shipmobile_prepare
+
+Generate and validate store metadata.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `app_name` | `string` | No | App name override |
+| `description` | `string` | No | Description override |
+| `keywords` | `string[]` | No | Keywords override |
+| `category` | `string` | No | Category override |
+
+## shipmobile_build
+
+Trigger EAS builds.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `platforms` | `("ios" \| "android")[]` | No | Target platforms (default: both) |
+| `profile` | `"development" \| "preview" \| "production"` | No | Build profile (default: production) |
+| `wait` | `boolean` | No | Wait for completion |
+
+## shipmobile_status
+
+Check build status and progress.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `build_id` | `string` | No | Specific build ID (default: latest) |
+| `project_path` | `string` | No | Project path |
+| `logs` | `boolean` | No | Include build logs |
+| `history` | `boolean` | No | Show build history |
+| `platform` | `"ios" \| "android"` | No | Filter by platform |
+
+## shipmobile_preview
+
+Generate preview links and QR codes.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `build_id` | `string` | No | Specific build ID |
+| `project_path` | `string` | No | Project path |
+| `platform` | `"ios" \| "android"` | No | Filter by platform |
+
+## shipmobile_submit
+
+Submit to App Store Connect and Google Play.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `platform` | `"ios" \| "android"` | No | Target platform |
+| `track` | `"internal" \| "alpha" \| "beta" \| "production"` | No | Google Play track |
+| `skip_preflight` | `boolean` | No | Skip pre-flight checks |
+
+## shipmobile_reset
+
+Clear all local config.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `force` | `boolean` | No | Skip confirmation |

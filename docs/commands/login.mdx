@@ -1,0 +1,63 @@
+---
+title: "login"
+description: "Authenticate with Apple Developer, Expo/EAS, and Google Play."
+---
+
+# shipmobile login
+
+Connect your app store accounts. Credentials are stored locally in `.shipmobile/credentials.json`, encrypted at rest.
+
+```bash
+shipmobile login
+```
+
+Running with no flags launches the **interactive wizard** — a guided flow that walks you through each provider.
+
+## Options
+
+| Flag | Description |
+|------|-------------|
+| `--expo` | Connect Expo/EAS account only |
+| `--apple` | Connect Apple Developer account only |
+| `--google` | Connect Google Play account only |
+| `--status` | Show current connection status |
+
+### CI / Non-Interactive Flags
+
+For headless environments, pass credentials directly:
+
+<Tabs>
+  <Tab title="Expo/EAS">
+    ```bash
+    shipmobile login --expo-token <token>
+    ```
+    Uses an [Expo access token](https://expo.dev/accounts/[account]/settings/access-tokens).
+  </Tab>
+  <Tab title="Apple">
+    ```bash
+    shipmobile login \
+      --apple-key-id <keyId> \
+      --apple-issuer-id <issuerId> \
+      --apple-key-path ./AuthKey.p8
+    ```
+    Uses an [App Store Connect API key](https://appstoreconnect.apple.com/access/integrations/api). All three flags are required together.
+  </Tab>
+  <Tab title="Google Play">
+    ```bash
+    shipmobile login --google-service-account ./service-account.json
+    ```
+    Uses a [Google Play service account](https://developers.google.com/android-publisher/getting_started) JSON key file.
+  </Tab>
+</Tabs>
+
+## Check Status
+
+```bash
+shipmobile login --status
+```
+
+Shows which providers are connected and when credentials were last validated.
+
+<Tip>
+  Credentials older than 30 days will trigger a warning in `shipmobile doctor`. Re-run `shipmobile login` to revalidate.
+</Tip>

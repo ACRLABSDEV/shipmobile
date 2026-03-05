@@ -1,0 +1,87 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "ShipMobile",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#22d3ee",
+    "light": "#90e0ef",
+    "dark": "#0891b2",
+    "anchors": {
+      "from": "#0891b2",
+      "to": "#22d3ee"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/ACRLABSDEV/shipmobile"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Install",
+    "url": "https://www.npmjs.com/package/shipmobile"
+  },
+  "tabs": [
+    {
+      "name": "Commands",
+      "url": "commands"
+    },
+    {
+      "name": "MCP Server",
+      "url": "mcp"
+    },
+    {
+      "name": "Advanced",
+      "url": "advanced"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/ACRLABSDEV/shipmobile"
+    },
+    {
+      "name": "npm",
+      "icon": "npm",
+      "url": "https://www.npmjs.com/package/shipmobile"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["introduction", "quickstart"]
+    },
+    {
+      "group": "Commands",
+      "pages": [
+        "commands/login",
+        "commands/init",
+        "commands/doctor",
+        "commands/audit",
+        "commands/assets",
+        "commands/prepare",
+        "commands/build",
+        "commands/status",
+        "commands/preview",
+        "commands/submit",
+        "commands/reset"
+      ]
+    },
+    {
+      "group": "MCP Server",
+      "pages": ["mcp/overview", "mcp/tools"]
+    },
+    {
+      "group": "Advanced",
+      "pages": ["advanced/ci-cd", "advanced/configuration"]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/ACRLABSDEV/shipmobile"
+  }
+}

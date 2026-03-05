@@ -1,0 +1,35 @@
+---
+title: "status"
+description: "Check build status, progress, and history."
+---
+
+# shipmobile status
+
+Real-time build progress in your terminal. No more alt-tabbing to dashboards.
+
+```bash
+shipmobile status
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `--build-id <id>` | Check a specific build ID | Latest |
+| `--logs` | Stream build logs | `false` |
+| `--history` | Show build history | `false` |
+| `--platform <platform>` | Filter by platform (`ios` or `android`) | Both |
+
+## Examples
+
+```bash
+# Check latest build
+shipmobile status
+
+# Stream logs for a specific build
+shipmobile status --build-id abc123 --logs
+
+# Show build history for iOS
+shipmobile status --history --platform ios
+```

@@ -1,0 +1,41 @@
+---
+title: "init"
+description: "Initialize your project for mobile deployment."
+---
+
+# shipmobile init
+
+Detects your project type, scaffolds configuration, and sets sensible defaults.
+
+```bash
+shipmobile init
+```
+
+## What it does
+
+1. Detects project type (Expo managed, Expo bare, React Native CLI)
+2. Reads `app.json` / `app.config.js` for existing config
+3. Creates or updates `eas.json` with build profiles
+4. Sets up the `.shipmobile/` config directory
+5. Configures bundle IDs if not already set
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` (current directory) |
+| `--bundle-id <id>` | Override bundle ID | Auto-detected |
+| `--platform <platforms...>` | Target platforms | `ios android` |
+
+## Examples
+
+```bash
+# Init current directory
+shipmobile init
+
+# Init a specific project with custom bundle ID
+shipmobile init -p ./my-app --bundle-id com.mycompany.myapp
+
+# iOS only
+shipmobile init --platform ios
+```

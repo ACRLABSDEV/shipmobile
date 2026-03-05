@@ -1,0 +1,84 @@
+---
+title: "MCP Server"
+description: "Let AI agents ship mobile apps autonomously via Model Context Protocol."
+---
+
+# MCP Server
+
+ShipMobile includes a full [Model Context Protocol](https://modelcontextprotocol.io) server. Every CLI command is available as a structured tool that any MCP-compatible AI agent can call.
+
+## What is MCP?
+
+MCP is a standard protocol for connecting AI agents to external tools. Instead of parsing CLI output, agents call structured tools and get typed JSON responses.
+
+## Starting the Server
+
+```bash
+shipmobile mcp
+```
+
+This starts an MCP server on stdio. Connect it to any MCP client.
+
+## Client Configuration
+
+Add ShipMobile to your MCP client config:
+
+<Tabs>
+  <Tab title="Cursor">
+    ```json title=".cursor/mcp.json"
+    {
+      "mcpServers": {
+        "shipmobile": {
+          "command": "shipmobile",
+          "args": ["mcp"]
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Claude Desktop">
+    ```json title="claude_desktop_config.json"
+    {
+      "mcpServers": {
+        "shipmobile": {
+          "command": "shipmobile",
+          "args": ["mcp"]
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="npx">
+    ```json
+    {
+      "mcpServers": {
+        "shipmobile": {
+          "command": "npx",
+          "args": ["shipmobile", "mcp"]
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Compatible Clients
+
+Works with **Cursor, Claude Desktop, Windsurf, Cline, OpenClaw**, and any other MCP-compatible client.
+
+## How Agents Use It
+
+An agent can autonomously ship an app:
+
+```
+Agent → shipmobile_init()     → detect project
+Agent → shipmobile_doctor()   → find and fix issues
+Agent → shipmobile_audit()    → improve score
+Agent → shipmobile_prepare()  → generate metadata
+Agent → shipmobile_build()    → trigger build
+Agent → shipmobile_status()   → poll progress
+Agent → shipmobile_preview()  → get TestFlight link
+Agent → shipmobile_submit()   → ship to stores
+```
+
+Every tool returns structured JSON — scores, findings, build IDs, URLs — that agents can reason about and act on.

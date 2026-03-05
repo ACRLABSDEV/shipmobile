@@ -1,0 +1,102 @@
+---
+title: "doctor"
+description: "Run 23 project health checks to catch issues before they become build failures."
+---
+
+# shipmobile doctor
+
+Comprehensive health check for your project. Catches problems before they become build failures or store rejections.
+
+```bash
+shipmobile doctor
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `--fix` | Auto-fix issues where possible | `false` |
+
+## All 23 Checks
+
+### Structure (5 checks)
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| `app-json-exists` | Critical | `app.json` or `app.config.js` / `app.config.ts` exists |
+| `app-json-valid` | Critical | `app.json` is valid JSON |
+| `package-json-valid` | Critical | `package.json` exists and is valid |
+| `node-modules-exist` | Warning | `node_modules` directory exists |
+| `entry-point-exists` | Warning | Entry point file found (`App.js`, `App.tsx`, `app/index.tsx`, etc.) |
+
+### Config (4 checks)
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| `bundle-id-format` | Critical | Bundle ID uses valid reverse-domain notation |
+| `version-format` | Warning | Version is valid semver (`1.0.0`) |
+| `sdk-version-supported` | Warning | Expo SDK version is in supported range (49–53) |
+| `eas-json-exists` | Warning | `eas.json` exists with build profiles |
+
+### Assets (3 checks)
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| `app-icon-exists` | Critical | App icon path in `app.json` points to a real file |
+| `app-icon-dimensions` | Warning | Icon is a 1024×1024 PNG |
+| `splash-screen-exists` | Warning | Splash screen image exists |
+
+### Accounts (3 checks)
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| `expo-connected` | Warning | Expo/EAS account is connected |
+| `apple-connected` | Warning | Apple Developer account is connected |
+| `credentials-valid` | Info | Stored credentials validated within last 30 days |
+
+### Build Readiness (3 checks)
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| `eas-production-profile` | Warning | `eas.json` has a `production` build profile |
+| `eas-cli-installed` | Info | EAS CLI is available on PATH |
+| `typescript-check` | Info | No TypeScript errors (`tsc --noEmit`) |
+
+### Dependencies (3 checks)
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| `no-incompatible-packages` | Warning | No known incompatible packages (`react-native-navigation`, `native-base`) |
+| `rn-expo-compat` | Warning | React Native version compatible with Expo SDK |
+| `no-duplicate-rn` | Warning | No duplicate React Native installations in `node_modules` |
+
+### Platform (2 checks)
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| `ios-bundle-id` | Critical | `expo.ios.bundleIdentifier` set in `app.json` |
+| `android-package` | Critical | `expo.android.package` set in `app.json` |
+
+<Note>
+  `--fix` can auto-generate `eas.json`, set bundle IDs, and set Android package names. Not all checks are auto-fixable.
+</Note>
+
+## Example Output
+
+```
+📱 ShipMobile — Project Health Check
+─────────────────────────────────────
+
+Running 23 checks...
+
+✅ 19 passed
+⚠️  3 warnings
+❌ 1 critical
+
+❌ CRITICAL
+  App icon missing — need 1024x1024 PNG at ./assets/icon.png
+  → Fix: add your app icon, then run `shipmobile assets`
+
+Overall: 🟡 Fixable — address the critical issue above
+```

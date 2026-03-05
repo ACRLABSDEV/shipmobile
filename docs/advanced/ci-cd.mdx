@@ -1,0 +1,77 @@
+---
+title: "CI/CD"
+description: "Using ShipMobile in continuous integration and deployment pipelines."
+---
+
+# CI/CD Integration
+
+ShipMobile is designed for headless environments. Every command supports non-interactive flags.
+
+## Authentication in CI
+
+Use the CI-specific flags to pass credentials without interactive prompts:
+
+```bash
+# Expo/EAS
+shipmobile login --expo-token $EXPO_TOKEN
+
+# Apple Developer
+shipmobile login \
+  --apple-key-id $APPLE_KEY_ID \
+  --apple-issuer-id $APPLE_ISSUER_ID \
+  --apple-key-path ./AuthKey.p8
+
+# Google Play
+shipmobile login --google-service-account ./service-account.json
+```
+
+## GitHub Actions Example
+
+```yaml title=".github/workflows/ship.yml"
+name: Ship Mobile
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install -g shipmobile
+      - run: npm install
+
+      # Authenticate
+      - run: shipmobile login --expo-token ${{ secrets.EXPO_TOKEN }}
+      - run: |
+          shipmobile login \
+            --apple-key-id ${{ secrets.APPLE_KEY_ID }} \
+            --apple-issuer-id ${{ secrets.APPLE_ISSUER_ID }} \
+            --apple-key-path ./keys/AuthKey.p8
+
+      # Validate
+      - run: shipmobile doctor --fix
+      - run: shipmobile audit
+
+      # Build and submit
+      - run: shipmobile build --wait
+      - run: shipmobile submit
+```
+
+## Key Flags for CI
+
+| Command | CI-relevant flags |
+|---------|-------------------|
+| `login` | `--expo-token`, `--apple-key-id`, `--apple-issuer-id`, `--apple-key-path`, `--google-service-account` |
+| `doctor` | `--fix` (auto-repair issues) |
+| `build` | `--wait` (block until complete), `--skip-validation` |
+| `submit` | `--skip-preflight` |
+| `reset` | `--force` (skip confirmation) |
+
+<Tip>
+  Store credentials as encrypted secrets in your CI provider. Never commit `.p8` files or service account keys to git.
+</Tip>

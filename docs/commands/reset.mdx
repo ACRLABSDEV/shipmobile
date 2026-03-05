@@ -1,0 +1,42 @@
+---
+title: "reset"
+description: "Clear all local ShipMobile config and start fresh."
+---
+
+# shipmobile reset
+
+Deletes the `.shipmobile/` directory — credentials, audit history, metadata, everything. Start over.
+
+```bash
+shipmobile reset
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `--force` | Skip confirmation prompt | `false` |
+
+## What gets deleted
+
+Everything in `.shipmobile/`:
+
+- `credentials.json` — stored account credentials
+- `audit-history/` — previous audit results
+- `metadata/` — generated store metadata
+- `config.json` — project configuration
+
+## Examples
+
+```bash
+# Interactive confirmation
+shipmobile reset
+
+# Skip confirmation (CI/scripts)
+shipmobile reset --force
+```
+
+<Warning>
+  This is irreversible. You'll need to re-run `shipmobile login` and `shipmobile init` after resetting.
+</Warning>
