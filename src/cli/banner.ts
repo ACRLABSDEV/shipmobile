@@ -248,16 +248,14 @@ function renderUsageBlock(): string {
 // ═══════════════════════════════════════════════════════════════
 
 export function getTitleArt(): string {
-  const oceanGradient = gradient(['#0369a1', '#0891b2', '#0d9488', '#059669']);
+  // figlet "Small" font — 4 lines tall, compact and clean
   const raw = [
-    '███████╗██╗  ██╗██╗██████╗ ███╗   ███╗ ██████╗ ██████╗ ██╗██╗     ███████╗',
-    '██╔════╝██║  ██║██║██╔══██╗████╗ ████║██╔═══██╗██╔══██╗██║██║     ██╔════╝',
-    '███████╗███████║██║██████╔╝██╔████╔██║██║   ██║██████╔╝██║██║     █████╗  ',
-    '╚════██║██╔══██║██║██╔═══╝ ██║╚██╔╝██║██║   ██║██╔══██╗██║██║     ██╔══╝  ',
-    '███████║██║  ██║██║██║     ██║ ╚═╝ ██║╚██████╔╝██████╔╝██║███████╗███████╗',
-    '╚══════╝╚═╝  ╚═╝╚═╝╚═╝     ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═╝╚══════╝╚══════╝',
+    ' ___ _  _ ___ ___ __  __  ___  ___ ___ _    ___ ',
+    '/ __| || |_ _| _ \\  \\/  |/ _ \\| _ )_ _| |  | __|',
+    '\\__ \\ __ || ||  _/ |\\/| | (_) | _ \\| || |__| _| ',
+    '|___/_||_|___|_| |_|  |_|\\___/|___/___|____|___|',
   ];
-  return raw.map(line => '  ' + oceanGradient(line)).join('\n');
+  return raw.map(line => '  ' + titleGradient(line)).join('\n');
 }
 
 const TAGLINE = 'Your agent can build the app. ShipMobile ships it.';
@@ -271,6 +269,8 @@ export function printCommandList(version = '0.1.0'): void {
   console.log(renderLogoBlock(version));
   console.log();
   console.log(`  ${chalk.italic(c.dimLink(TAGLINE))}`);
+  console.log();
+  console.log(getTitleArt());
   console.log();
   console.log(renderSections());
   console.log(renderUsageBlock());
