@@ -515,7 +515,7 @@ export function renderStatusResult(result: Result<import('../core/status.js').St
 }
 
 // === PREVIEW ===
-export function renderPreviewResult(result: Result<import('../core/preview.js').PreviewResult>): void {
+export async function renderPreviewResult(result: Result<import('../core/preview.js').PreviewResult>): Promise<void> {
   if (!result.ok) {
     console.log(`\n  ${theme.error(result.error.message)}`);
     if (result.error.suggestion) {
@@ -553,7 +553,7 @@ export function renderPreviewResult(result: Result<import('../core/preview.js').
   // QR codes
   if (data.qrData.length > 0) {
     for (const url of data.qrData) {
-      console.log(generateQRCode(url));
+      console.log(await generateQRCode(url));
       console.log(`  ${theme.colors.dim('↑ Scan to install')}`);
       console.log();
     }

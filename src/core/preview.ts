@@ -86,74 +86,20 @@ function generatePreviewLinks(build: EASBuildInfo): PreviewLink[] {
 }
 
 /**
- * Simple QR code generation using Unicode block characters
- * Produces a compact QR-like representation for terminal display
+ * Generate a real, scannable QR code for terminal display.
+ * Uses the `qrcode` package to produce a proper QR code rendered
+ * with Unicode block characters (compact: 2 rows per line).
  */
-export function generateQRCode(data: string): string {
-  // Simple encoding: create a visual hash-based pattern
-  // For real QR codes, the qrcode-terminal package would be used at runtime
-  // This generates a deterministic visual pattern from the URL
-  const size = 21; // QR version 1 is 21x21
-  const modules: boolean[][] = [];
-
-  // Create a simple hash-based pattern
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0;
-  }
-
-  // Seed a simple PRNG from the hash
-  let seed = Math.abs(hash);
-  function nextRand(): number {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    return seed;
-  }
-
-  for (let y = 0; y < size; y++) {
-    modules[y] = [];
-    for (let x = 0; x < size; x++) {
-      // Finder patterns (top-left, top-right, bottom-left corners)
-      const isFinderArea =
-        (x < 7 && y < 7) || // top-left
-        (x >= size - 7 && y < 7) || // top-right
-        (x < 7 && y >= size - 7); // bottom-left
-
-      if (isFinderArea) {
-        // Simplified finder pattern
-        const fx = x < 7 ? x : x >= size - 7 ? x - (size - 7) : x;
-        const fy = y < 7 ? y : y >= size - 7 ? y - (size - 7) : y;
-        const isOuter = fx === 0 || fx === 6 || fy === 0 || fy === 6;
-        const isInner = fx >= 2 && fx <= 4 && fy >= 2 && fy <= 4;
-        modules[y]![x] = isOuter || isInner;
-      } else {
-        modules[y]![x] = nextRand() % 3 !== 0;
-      }
-    }
-  }
-
-  // Render using Unicode block characters (2 rows per character)
-  const lines: string[] = [];
-  // Top quiet zone
-  lines.push('  ' + '█'.repeat(size + 2));
-
-  for (let y = 0; y < size; y += 2) {
-    let line = '  █';
-    for (let x = 0; x < size; x++) {
-      const top = modules[y]?.[x] ?? false;
-      const bottom = modules[y + 1]?.[x] ?? false;
-      if (top && bottom) line += ' ';
-      else if (top && !bottom) line += '▄';
-      else if (!top && bottom) line += '▀';
-      else line += '█';
-    }
-    line += '█';
-    lines.push(line);
-  }
-
-  // Bottom quiet zone
-  lines.push('  ' + '█'.repeat(size + 2));
-
-  return lines.join('\n');
+export async function generateQRCode(data: string): Promise<string> {
+  const { toString } = await import('qrcode');
+  // toString with 'utf8' type renders a scannable QR using Unicode half-blocks
+  const qr = await toString(data, {
+    type: 'terminal',
+    small: true,
+    errorCorrectionLevel: 'M',
+    margin: 1,
+  });
+  return qr.trimEnd();
 }
 
 export async function execute(input: PreviewInput = {}): Promise<Result<PreviewResult>> {

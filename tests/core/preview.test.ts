@@ -197,8 +197,8 @@ describe('preview command', () => {
 });
 
 describe('QR code generation', () => {
-  it('should generate a QR code string', () => {
-    const qr = generateQRCode('https://example.com/test');
+  it('should generate a scannable QR code string', async () => {
+    const qr = await generateQRCode('https://example.com/test');
 
     expect(qr).toBeTruthy();
     expect(qr.split('\n').length).toBeGreaterThan(5);
@@ -206,24 +206,23 @@ describe('QR code generation', () => {
     expect(qr).toContain('█');
   });
 
-  it('should generate different QR codes for different URLs', () => {
-    const qr1 = generateQRCode('https://example.com/one');
-    const qr2 = generateQRCode('https://example.com/two');
+  it('should generate different QR codes for different URLs', async () => {
+    const qr1 = await generateQRCode('https://example.com/one');
+    const qr2 = await generateQRCode('https://example.com/two');
 
     expect(qr1).not.toBe(qr2);
   });
 
-  it('should generate deterministic QR codes', () => {
+  it('should generate deterministic QR codes', async () => {
     const url = 'https://expo.dev/artifacts/build-123.apk';
-    const qr1 = generateQRCode(url);
-    const qr2 = generateQRCode(url);
+    const qr1 = await generateQRCode(url);
+    const qr2 = await generateQRCode(url);
 
     expect(qr1).toBe(qr2);
   });
 
-  it('should have finder pattern corners', () => {
-    const qr = generateQRCode('https://test.com');
-    // The QR code should have consistent structure
+  it('should produce a real QR code with proper structure', async () => {
+    const qr = await generateQRCode('https://test.com');
     const lines = qr.split('\n');
     expect(lines.length).toBeGreaterThan(10);
   });

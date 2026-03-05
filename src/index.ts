@@ -291,7 +291,7 @@ program
       buildId: options.buildId,
       platform: options.platform as 'ios' | 'android' | undefined,
     });
-    renderPreviewResult(result);
+    await renderPreviewResult(result);
   });
 
 // === PLACEHOLDER COMMANDS ===
