@@ -47,21 +47,21 @@ function getPixelCrab(): string[] {
   const pal: Record<number, string> = {
     1: '#0e7490', 2: '#0891b2', 3: '#38bdf8', 4: '#f0fafa', 5: '#2dd4bf',
   };
+  // 6 cols × 6 rows — compact (~3 terminal lines via half-block)
+  // Easy to swap pixel art later: just change this grid + palette
   const px = [
-    [0,1,0,0,0,0,0,0,1,0],
-    [1,1,0,0,0,0,0,0,1,1],
-    [0,1,2,3,2,2,3,2,1,0],
-    [1,2,2,2,2,2,2,2,2,1],
-    [0,2,4,2,2,2,2,4,2,0],
-    [0,2,2,3,2,2,3,2,2,0],
-    [1,2,2,2,2,2,2,2,2,1],
-    [0,5,2,0,2,2,0,2,5,0],
-    [0,0,5,0,0,0,0,5,0,0],
+    [0,1,0,0,1,0],
+    [1,2,3,3,2,1],
+    [2,4,2,2,4,2],
+    [2,2,3,3,2,2],
+    [0,5,0,0,5,0],
+    [0,0,5,5,0,0],
   ];
+  const cols = px[0]!.length;
   const lines: string[] = [];
   for (let r = 0; r < px.length; r += 2) {
     const topRow = px[r]!;
-    const botRow = r + 1 < px.length ? px[r + 1]! : new Array(10).fill(0);
+    const botRow = r + 1 < px.length ? px[r + 1]! : new Array(cols).fill(0);
     let line = '';
     for (let col = 0; col < topRow.length; col++) {
       const top = topRow[col]!;
@@ -88,10 +88,8 @@ function logoBlock(version: string): string {
     c.label('ACR LABS'),
     chalk.hex('#22d3ee').bold('ShipMobile'),
     chalk.hex('#5a7a8a')(`v${version}`) + '  ' + c.blue('github.com/ACRLABSDEV/shipmobile'),
-    '',
-    '',
   ];
-  const MASCOT_WIDTH = 10;
+  const MASCOT_WIDTH = 6;
   const GAP = '  ';
   const result: string[] = [];
   const maxLines = Math.max(mascotLines.length, textLines.length);
