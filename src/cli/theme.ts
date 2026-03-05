@@ -23,28 +23,36 @@ export function termWidth(): number {
 // Named for PURPOSE, not appearance. Mirrors Claude Code's approach.
 
 export const colors = {
-  // Brand
-  brand: chalk.hex('#00b4d8'),         // ShipMobile brand (ocean blue)
+  // Ocean palette — matches the design mockup
+  brand: chalk.hex('#38bdf8'),         // sky blue (primary)
+  cyan: chalk.hex('#22d3ee'),          // cyan (commands, accents)
+  teal: chalk.hex('#2dd4bf'),          // teal (status, highlights)
+  green: chalk.hex('#34d399'),         // green (action commands)
+  yellow: chalk.hex('#fbbf24'),        // yellow (warnings, audit)
+  purple: chalk.hex('#a78bfa'),        // purple (mcp, args)
+  muted: chalk.hex('#3d5a6e'),         // section labels
+  textDim: chalk.hex('#4e7080'),       // descriptions
+  text: chalk.hex('#cce4f0'),          // primary text
 
-  // Semantic
-  success: chalk.green,
-  warning: chalk.yellow,
+  // Semantic (aliased from ocean palette)
+  success: chalk.hex('#34d399'),
+  warning: chalk.hex('#fbbf24'),
   error: chalk.red,
-  info: chalk.blue,
-  suggestion: chalk.cyan,              // actionable hints
-  subtle: chalk.gray,                  // de-emphasized, non-essential
+  info: chalk.hex('#38bdf8'),
+  suggestion: chalk.hex('#22d3ee'),
+  subtle: chalk.hex('#3d5a6e'),
 
   // Text modifiers
   bold: chalk.bold,
-  dim: chalk.dim,                      // THE key hierarchy tool
+  dim: chalk.dim,
   italic: chalk.italic,
   inverse: chalk.inverse,
 
   // Compound helpers
-  brandBold: chalk.hex('#00b4d8').bold,
+  brandBold: chalk.hex('#38bdf8').bold,
   errorBold: chalk.red.bold,
-  successBold: chalk.green.bold,
-  warningBold: chalk.yellow.bold,
+  successBold: chalk.hex('#34d399').bold,
+  warningBold: chalk.hex('#fbbf24').bold,
 };
 
 // ─── Symbols ─────────────────────────────────────────────────────────
