@@ -28,6 +28,17 @@ The entire shipping process is a nightmare that has nothing to do with building 
 
 **ShipMobile eliminates that wall.** One CLI. One MCP server. From code to App Store.
 
+### Built for the Agentic Era
+
+ShipMobile isn't just a CLI with an MCP bolted on. It's **agent-native from the ground up.** Every command returns structured, machine-readable output. Every error is typed and actionable. Every flow is designed so an AI agent can drive it end-to-end without human intervention.
+
+Today, your agent writes the code but hands you the shipping. Tomorrow, your agent writes the code *and* ships it — while you sleep. That's the future we're building for.
+
+**Who this is for:**
+- 🎨 **Vibe coders** who prompted an app into existence but have no idea how provisioning profiles work
+- 🤖 **AI agents** (Cursor, Claude, OpenClaw, Windsurf, Cline) that need to complete the deployment lifecycle
+- 🛠️ **Indie devs** who've done this 100 times and still hate every second of it
+
 ```
 $ shipmobile doctor
 
@@ -98,7 +109,7 @@ Generates TestFlight and APK download links with QR codes rendered right in your
 Uploads your build + metadata to App Store Connect and Google Play Console. Pre-flight checks ensure everything is complete before submission.
 
 ### 🤖 MCP Server (`shipmobile mcp`)
-Full MCP (Model Context Protocol) integration. Every command is available as a structured tool for AI agents — Cursor, Claude, Windsurf, Cline, or any MCP-compatible client.
+Full [MCP (Model Context Protocol)](https://modelcontextprotocol.io) integration. Every command is available as a structured tool for AI agents. Drop this into any MCP-compatible client and your agent can ship apps autonomously:
 
 ```json
 {
@@ -110,6 +121,15 @@ Full MCP (Model Context Protocol) integration. Every command is available as a s
   }
 }
 ```
+
+Works with **Cursor, Claude Desktop, Windsurf, Cline, OpenClaw**, and any other MCP client. Your agent gets the same power as the CLI — structured JSON responses, typed errors, and full state awareness.
+
+### 🧠 Agentic Intelligence *— coming soon*
+We're building toward a world where ShipMobile doesn't just execute commands — it *thinks*:
+- **Context-aware suggestions** — learns from your project history and past rejections
+- **LLM-powered audit fixes** — `shipmobile fix` feeds audit findings to AI and generates patches
+- **Memory across sessions** — remembers your store preferences, past submissions, and common issues
+- **Proactive alerts** — notifies you (or your agent) when certificates expire, new SDK versions drop, or store policies change
 
 ### 🔄 OTA Updates (`shipmobile update`) *— coming soon*
 Push over-the-air updates via Expo Updates. Skip app store review for JS/asset changes. Rollback instantly if something goes wrong.
@@ -149,22 +169,39 @@ shipmobile submit
 
 ## Agent Workflow
 
-ShipMobile is **agent-first**. Here's what it looks like when an AI agent ships your app:
+ShipMobile is **agent-first**. This is what fully autonomous mobile deployment looks like:
 
 ```
-Agent: "Build me a habit tracker and put it on TestFlight"
+You: "Build me a habit tracker and put it on TestFlight"
 
-1. Agent writes React Native code
-2. shipmobile_init()     → detects project, sets config
-3. shipmobile_doctor()   → finds missing icon
-4. Agent fixes icon
-5. shipmobile_audit()    → score 82/100, removes console.logs
-6. shipmobile_build()    → triggers EAS build
-7. shipmobile_status()   → polls until complete
-8. shipmobile_preview()  → generates TestFlight link
+Agent writes React Native code...
 
-Agent: "Your app is on TestFlight! Install it here: [link]"
+Agent → shipmobile_init()     → detects project, sets config
+Agent → shipmobile_doctor()   → finds missing icon → fixes it
+Agent → shipmobile_audit()    → score 82/100 → removes console.logs → 94/100
+Agent → shipmobile_prepare()  → generates metadata + privacy policy
+Agent → shipmobile_build()    → triggers EAS build
+Agent → shipmobile_status()   → polls until complete
+Agent → shipmobile_preview()  → generates TestFlight link
+
+Agent: "Your app is on TestFlight! Scan this QR code to install. 
+        Store listing is ready — say 'submit' when you want to go live."
 ```
+
+**Zero human steps between "I have an idea" and "it's on TestFlight."** That's the vision. The agent handles everything — code, config, assets, compliance, build, deploy. You just approve the final submission.
+
+### Why MCP Matters
+
+MCP is the bridge between AI agents and real-world tools. Without it, agents can write code but can't *do* anything with it. ShipMobile's MCP server gives any agent — regardless of platform — the ability to:
+
+- Authenticate with app stores
+- Validate projects against 25+ health checks
+- Run deep static analysis
+- Trigger cloud builds
+- Generate preview links
+- Submit to stores
+
+No custom integrations. No platform lock-in. Just tools that any agent can call.
 
 ## Roadmap
 
@@ -174,11 +211,13 @@ ShipMobile is being built in phases. Here's where we're at:
 |-------|--------|------|
 | **0 — Foundation** | ✅ Done | Repo scaffold, architecture, CLI + MCP entry points |
 | **1 — Auth & Setup** | 🔨 In Progress | `login`, `init`, `doctor` |
-| **2 — Audit Engine** | ⏳ Next | 25+ static analysis rules, scoring |
-| **3 — Assets & Metadata** | ⏳ Planned | Icon processing, metadata generation |
-| **4 — Build Loop** | ⏳ Planned | Build, status, preview |
-| **5 — Submit & Launch** | ⏳ Planned | Store submission, docs, public launch |
+| **2 — Audit Engine** | ⏳ Next | 25+ static analysis rules, scoring, `--fix` |
+| **3 — Assets & Metadata** | ⏳ Planned | Icon processing, metadata generation, privacy policies |
+| **4 — Build Loop** | ⏳ Planned | Build, status, preview with QR codes |
+| **5 — Submit & Launch** | ⏳ Planned | Store submission, docs, npm publish, public launch |
 | **6 — OTA Updates** | ⏳ Future | `update`, `rollback`, AI-assisted fixes |
+| **7 — Agentic Intelligence** | 🔮 Vision | LLM memory, proactive alerts, context-aware suggestions |
+| **8 — Ecosystem** | 🔮 Vision | Flutter/Swift/Kotlin support, plugin marketplace, CI/CD generation |
 
 ## Tech Stack
 
