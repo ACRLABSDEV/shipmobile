@@ -8,6 +8,9 @@ import * as doctor from '../core/doctor.js';
 import * as audit from '../core/audit/index.js';
 import * as assets from '../core/assets.js';
 import * as prepare from '../core/prepare.js';
+import * as build from '../core/build.js';
+import * as status from '../core/status.js';
+import * as preview from '../core/preview.js';
 
 function jsonResponse(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -136,6 +139,54 @@ export async function handlePrepare(args: {
     description: args.description,
     keywords: args.keywords,
     category: args.category,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handleBuild(args: {
+  project_path?: string;
+  platforms?: ('ios' | 'android')[];
+  profile?: 'development' | 'preview' | 'production';
+  wait?: boolean;
+}) {
+  const result = await build.execute({
+    projectPath: args.project_path,
+    platforms: args.platforms,
+    profile: args.profile,
+    wait: args.wait,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handleStatus(args: {
+  build_id?: string;
+  project_path?: string;
+  logs?: boolean;
+  history?: boolean;
+  platform?: 'ios' | 'android';
+}) {
+  const result = await status.execute({
+    projectPath: args.project_path,
+    buildId: args.build_id,
+    logs: args.logs,
+    history: args.history,
+    platform: args.platform,
+  });
+  if (!result.ok) return errorResponse(result.error.message);
+  return jsonResponse(result.data);
+}
+
+export async function handlePreview(args: {
+  build_id?: string;
+  project_path?: string;
+  platform?: 'ios' | 'android';
+}) {
+  const result = await preview.execute({
+    projectPath: args.project_path,
+    buildId: args.build_id,
+    platform: args.platform,
   });
   if (!result.ok) return errorResponse(result.error.message);
   return jsonResponse(result.data);

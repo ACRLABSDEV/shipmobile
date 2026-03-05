@@ -9,13 +9,16 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { printBanner, printHeader, printCommandList } from './cli/banner.js';
 import { renderComingSoon } from './cli/renderer.js';
-import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult, renderAssetsResult, renderPrepareResult } from './cli/renderer.js';
+import { renderLoginResult, renderLoginStatus, renderInitResult, renderDoctorResult, renderAuditResult, renderAssetsResult, renderPrepareResult, renderBuildResult, renderStatusResult, renderPreviewResult } from './cli/renderer.js';
 import * as login from './core/login.js';
 import * as init from './core/init.js';
 import * as doctor from './core/doctor.js';
 import * as audit from './core/audit/index.js';
 import * as assets from './core/assets.js';
 import * as prepare from './core/prepare.js';
+import * as build from './core/build.js';
+import * as status from './core/status.js';
+import * as preview from './core/preview.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -232,8 +235,67 @@ program
     renderPrepareResult(result);
   });
 
+// === BUILD ===
+program
+  .command('build')
+  .description('Trigger EAS build for iOS and/or Android')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--platform <platforms...>', 'Platforms (ios, android)')
+  .option('--profile <profile>', 'Build profile (development, preview, production)', 'production')
+  .option('--wait', 'Wait for build to complete')
+  .option('--skip-validation', 'Skip pre-build doctor checks')
+  .action(async (options: { path: string; platform?: string[]; profile?: string; wait?: boolean; skipValidation?: boolean }) => {
+    printHeader('Build');
+    const result = await build.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      platforms: options.platform as ('ios' | 'android')[] | undefined,
+      profile: options.profile as 'development' | 'preview' | 'production',
+      wait: options.wait,
+      skipValidation: options.skipValidation,
+    });
+    renderBuildResult(result);
+  });
+
+// === STATUS ===
+program
+  .command('status')
+  .description('Check build status and progress')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--build-id <id>', 'Specific build ID')
+  .option('--logs', 'Stream build logs')
+  .option('--history', 'Show build history')
+  .option('--platform <platform>', 'Filter by platform (ios, android)')
+  .action(async (options: { path: string; buildId?: string; logs?: boolean; history?: boolean; platform?: string }) => {
+    printHeader('Build Status');
+    const result = await status.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      buildId: options.buildId,
+      logs: options.logs,
+      history: options.history,
+      platform: options.platform as 'ios' | 'android' | undefined,
+    });
+    renderStatusResult(result);
+  });
+
+// === PREVIEW ===
+program
+  .command('preview')
+  .description('Generate shareable preview links and QR codes')
+  .option('-p, --path <path>', 'Project path', '.')
+  .option('--build-id <id>', 'Specific build ID')
+  .option('--platform <platform>', 'Filter by platform (ios, android)')
+  .action(async (options: { path: string; buildId?: string; platform?: string }) => {
+    printHeader('Preview');
+    const result = await preview.execute({
+      projectPath: options.path === '.' ? undefined : options.path,
+      buildId: options.buildId,
+      platform: options.platform as 'ios' | 'android' | undefined,
+    });
+    renderPreviewResult(result);
+  });
+
 // === PLACEHOLDER COMMANDS ===
-for (const cmd of ['build', 'status', 'preview', 'submit']) {
+for (const cmd of ['submit']) {
   program
     .command(cmd)
     .description(`${cmd} — coming soon`)

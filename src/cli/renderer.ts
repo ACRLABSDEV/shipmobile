@@ -8,6 +8,7 @@ import type { InitResult } from '../core/init.js';
 import type { DoctorResult } from '../core/doctor.js';
 import type { AuditResult } from '../core/audit/index.js';
 import type { AuditFinding } from '../analyzers/types.js';
+import { generateQRCode } from '../core/preview.js';
 import * as theme from './theme.js';
 
 export function renderResult<T>(result: Result<T>, formatter?: (data: T) => string): void {
@@ -393,6 +394,187 @@ export function renderAssetsResult(result: Result<import('../core/assets.js').As
     }
     console.log();
   }
+}
+
+// === BUILD ===
+export function renderBuildResult(result: Result<import('../core/build.js').BuildResult>): void {
+  if (!result.ok) {
+    console.log(`\n  ${theme.error(result.error.message)}`);
+    if (result.error.suggestion) {
+      console.log(`  ${theme.icons.arrow} ${theme.colors.dim(result.error.suggestion)}`);
+    }
+    console.log();
+    return;
+  }
+
+  const data = result.data;
+  console.log();
+
+  if (data.validated) {
+    console.log(`  ${theme.icons.success} Pre-build validation passed`);
+    if (data.validationIssues.length > 0) {
+      for (const issue of data.validationIssues) {
+        console.log(`    ${theme.icons.warning} ${theme.colors.warning(issue)}`);
+      }
+    }
+    console.log();
+  }
+
+  for (const build of data.builds) {
+    const statusIcon = build.status === 'errored' ? theme.icons.error
+      : build.status === 'finished' ? theme.icons.success
+      : theme.icons.pending;
+    const platformLabel = build.platform === 'ios' ? 'iOS' : 'Android';
+
+    console.log(`  ${statusIcon} ${theme.colors.bold(platformLabel)} — ${build.profile}`);
+    console.log(`    Build ID: ${theme.colors.primary(build.id)}`);
+    console.log(`    Status:   ${build.status}`);
+    if (build.estimatedTime) {
+      console.log(`    ETA:      ~${Math.ceil(build.estimatedTime / 60)} min`);
+    }
+    if (build.error) {
+      console.log(`    ${theme.colors.error(`Error: ${build.error}`)}`);
+    }
+    console.log();
+  }
+
+  const hasActive = data.builds.some(b => b.status !== 'errored' && b.status !== 'finished');
+  if (hasActive) {
+    console.log(`  Run ${theme.colors.primary('shipmobile status')} to monitor progress.`);
+    console.log(`  Or wait: ${theme.colors.primary('shipmobile build --wait')}`);
+    console.log();
+  }
+}
+
+// === STATUS ===
+export function renderStatusResult(result: Result<import('../core/status.js').StatusResult>): void {
+  if (!result.ok) {
+    console.log(`\n  ${theme.error(result.error.message)}`);
+    if (result.error.suggestion) {
+      console.log(`  ${theme.icons.arrow} ${theme.colors.dim(result.error.suggestion)}`);
+    }
+    console.log();
+    return;
+  }
+
+  const data = result.data;
+  console.log();
+
+  // History mode
+  if (data.history && data.history.length > 0) {
+    console.log(theme.heading('  📱 ShipMobile — Build History'));
+    console.log(`  ${theme.divider()}`);
+    console.log();
+    for (const entry of data.history) {
+      const statusIcon = entry.status === 'finished' ? theme.icons.success
+        : entry.status === 'errored' ? theme.icons.error
+        : theme.icons.pending;
+      const platformLabel = entry.platform === 'ios' ? 'iOS' : 'Android';
+      const date = new Date(entry.createdAt).toLocaleDateString();
+      const dur = entry.duration ? ` (${Math.round(entry.duration / 60)}m)` : '';
+      console.log(`  ${statusIcon} ${theme.colors.bold(platformLabel)} ${entry.profile} — ${entry.status}${dur} — ${date}`);
+      console.log(`    ${theme.colors.dim(entry.id)}`);
+    }
+    console.log();
+    return;
+  }
+
+  // Live status
+  for (const build of data.builds) {
+    const platformLabel = build.platform === 'ios' ? 'iOS' : 'Android';
+    const elapsed = formatDuration(build.elapsedMs);
+
+    if (build.isComplete) {
+      console.log(`  ${theme.icons.success} ${theme.colors.bold(platformLabel)}: ${theme.colors.success('Complete!')} (${elapsed})`);
+      if (build.artifacts?.applicationArchiveUrl) {
+        console.log(`    ${theme.colors.dim(build.artifacts.applicationArchiveUrl)}`);
+      }
+    } else if (build.isError) {
+      console.log(`  ${theme.icons.error} ${theme.colors.bold(platformLabel)}: ${theme.colors.error(build.phaseLabel)}`);
+      if (build.error) {
+        console.log(`    ${theme.colors.error(build.error)}`);
+      }
+    } else {
+      const bar = progressBar(build.progress, 20);
+      const eta = build.estimatedRemaining ? `ETA: ~${Math.ceil(build.estimatedRemaining / 60)} min` : '';
+      console.log(`  ${theme.icons.pending} ${theme.colors.bold(platformLabel)}: ${build.phaseLabel}  ${bar} ${build.progress}%`);
+      console.log(`    ${theme.colors.dim(`Elapsed: ${elapsed}${eta ? ' • ' + eta : ''}`)}`);
+    }
+    console.log();
+  }
+
+  // Logs
+  if (data.logs && data.logs.length > 0) {
+    console.log(theme.heading('  Build Logs'));
+    console.log(`  ${theme.divider()}`);
+    for (const log of data.logs.slice(-20)) {
+      console.log(`  ${theme.colors.dim(log.timestamp)} ${log.message}`);
+    }
+    console.log();
+  }
+}
+
+// === PREVIEW ===
+export function renderPreviewResult(result: Result<import('../core/preview.js').PreviewResult>): void {
+  if (!result.ok) {
+    console.log(`\n  ${theme.error(result.error.message)}`);
+    if (result.error.suggestion) {
+      console.log(`  ${theme.icons.arrow} ${theme.colors.dim(result.error.suggestion)}`);
+    }
+    console.log();
+    return;
+  }
+
+  const data = result.data;
+  console.log();
+
+  // Group links by platform
+  const iosLinks = data.previews.filter(p => p.platform === 'ios');
+  const androidLinks = data.previews.filter(p => p.platform === 'android');
+
+  if (iosLinks.length > 0) {
+    console.log(`  ${theme.colors.bold('iOS:')}`);
+    for (const link of iosLinks) {
+      console.log(`  ${link.label}`);
+      console.log(`  ${theme.colors.primary(link.url)}`);
+    }
+    console.log();
+  }
+
+  if (androidLinks.length > 0) {
+    console.log(`  ${theme.colors.bold('Android:')}`);
+    for (const link of androidLinks) {
+      console.log(`  ${link.label}`);
+      console.log(`  ${theme.colors.primary(link.url)}`);
+    }
+    console.log();
+  }
+
+  // QR codes
+  if (data.qrData.length > 0) {
+    for (const url of data.qrData) {
+      console.log(generateQRCode(url));
+      console.log(`  ${theme.colors.dim('↑ Scan to install')}`);
+      console.log();
+    }
+  }
+
+  console.log(`  ${theme.icons.tip} ${theme.colors.info('Share these links with anyone — they can install immediately.')}`);
+  console.log();
+}
+
+function progressBar(percent: number, width: number): string {
+  const filled = Math.round((percent / 100) * width);
+  const empty = width - filled;
+  return theme.colors.primary('█'.repeat(filled)) + theme.colors.dim('░'.repeat(empty));
+}
+
+function formatDuration(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
 }
 
 // === PREPARE ===

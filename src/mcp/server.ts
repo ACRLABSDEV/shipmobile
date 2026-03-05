@@ -5,7 +5,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { handleLogin, handleInit, handleDoctor, handleAudit, handleAssets, handlePrepare } from './handlers.js';
+import { handleLogin, handleInit, handleDoctor, handleAudit, handleAssets, handlePrepare, handleBuild, handleStatus, handlePreview } from './handlers.js';
 
 export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
@@ -89,16 +89,46 @@ export async function startMcpServer(): Promise<void> {
     handlePrepare,
   );
 
+  server.tool(
+    'shipmobile_build',
+    'Trigger EAS build for iOS and/or Android',
+    {
+      project_path: z.string().optional().describe('Project path'),
+      platforms: z.array(z.enum(['ios', 'android'])).optional().describe('Target platforms (default: both)'),
+      profile: z.enum(['development', 'preview', 'production']).optional().describe('Build profile (default: production)'),
+      wait: z.boolean().optional().describe('Wait for build to complete before returning'),
+    },
+    handleBuild,
+  );
+
+  server.tool(
+    'shipmobile_status',
+    'Check build status, queue position, and progress',
+    {
+      build_id: z.string().optional().describe('Specific build ID, or omit for latest'),
+      project_path: z.string().optional().describe('Project path'),
+      logs: z.boolean().optional().describe('Include build logs'),
+      history: z.boolean().optional().describe('Show build history'),
+      platform: z.enum(['ios', 'android']).optional().describe('Filter by platform'),
+    },
+    handleStatus,
+  );
+
+  server.tool(
+    'shipmobile_preview',
+    'Generate shareable preview links and QR codes for completed builds',
+    {
+      build_id: z.string().optional().describe('Specific build ID'),
+      project_path: z.string().optional().describe('Project path'),
+      platform: z.enum(['ios', 'android']).optional().describe('Filter by platform'),
+    },
+    handlePreview,
+  );
+
   // Stub tools for future phases
-  for (const [name, desc] of [
-    ['shipmobile_build', 'Trigger EAS build'],
-    ['shipmobile_status', 'Check build progress'],
-    ['shipmobile_submit', 'Submit to App Store / Play Store'],
-  ] as const) {
-    server.tool(name, desc, {}, async () => ({
-      content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Not implemented yet — coming in a future phase.' }) }],
-    }));
-  }
+  server.tool('shipmobile_submit', 'Submit to App Store / Play Store', {}, async () => ({
+    content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Not implemented yet — coming in a future phase.' }) }],
+  }));
 
   // Let users know this is working (stderr so it doesn't interfere with stdio protocol)
   if (process.stderr.isTTY) {
