@@ -3,8 +3,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import jwt from 'jsonwebtoken';
-const { sign } = jwt;
+import { importPKCS8, SignJWT } from 'jose';
 import { ok, err, type Result } from '../../utils/result.js';
 
 export interface AppleAccount {
@@ -20,27 +19,20 @@ export interface AppleKeyConfig {
 }
 
 /**
- * Generate a JWT for App Store Connect API
+ * Generate a JWT for App Store Connect API using jose (pure ESM)
  */
-export function generateJwt(privateKey: string, keyId: string, issuerId: string): string {
+export async function generateJwt(privateKey: string, keyId: string, issuerId: string): Promise<string> {
+  const key = await importPKCS8(privateKey, 'ES256');
   const now = Math.floor(Date.now() / 1000);
-  return sign(
-    {
-      iss: issuerId,
-      iat: now,
-      exp: now + 20 * 60, // 20 minutes
-      aud: 'appstoreconnect-v1',
-    },
-    privateKey,
-    {
-      algorithm: 'ES256',
-      header: {
-        alg: 'ES256',
-        kid: keyId,
-        typ: 'JWT',
-      },
-    },
-  );
+
+  return new SignJWT({
+    iss: issuerId,
+    iat: now,
+    exp: now + 20 * 60,
+    aud: 'appstoreconnect-v1',
+  })
+    .setProtectedHeader({ alg: 'ES256', kid: keyId, typ: 'JWT' })
+    .sign(key);
 }
 
 /**
@@ -59,7 +51,7 @@ export async function validateKey(config: AppleKeyConfig): Promise<Result<AppleA
       );
     }
 
-    const jwt = generateJwt(privateKey, config.keyId, config.issuerId);
+    const jwt = await generateJwt(privateKey, config.keyId, config.issuerId);
 
     const res = await fetch('https://api.appstoreconnect.apple.com/v1/apps?limit=1', {
       headers: {
