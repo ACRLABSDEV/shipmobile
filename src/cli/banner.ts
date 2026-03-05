@@ -1,11 +1,9 @@
 /**
  * ShipMobile CLI — Banner & Command Display
  *
- * Style aligned with Claude Code:
- * - Inline PNG sprite (iTerm2/Kitty) with ASCII fallback
- * - Clean semantic colors, aggressive dimming for hierarchy
- * - Unicode figures, no gratuitous emoji
- * - Compact, dense info display
+ * Inline PNG sprite (iTerm2/Kitty) with ASCII lobster fallback.
+ * Original block-letter title art with gradient.
+ * Claude Code-aligned styling: semantic colors, dimColor hierarchy, Unicode figures.
  */
 
 import chalk from 'chalk';
@@ -70,16 +68,15 @@ function tryRenderSprite(): string | null {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ASCII LOBSTER (fallback when no inline image support)
+// ASCII LOBSTER — Larry the Sailor (fallback)
 // ═══════════════════════════════════════════════════════════════
 
 export function getLobsterAscii(): string {
-  // Larry the Lobster — colored with semantic approach
-  const R  = chalk.hex('#e63946'); // body red
-  const Rd = chalk.hex('#a81c2b'); // darker red (claws)
-  const K  = chalk.hex('#2b2d42'); // outline dark
-  const B  = chalk.hex('#1e3a6e'); // hat dark
-  const Bl = chalk.hex('#3b7dd8'); // hat light
+  const R  = chalk.hex('#e63946');
+  const Rd = chalk.hex('#a81c2b');
+  const K  = chalk.hex('#2b2d42');
+  const B  = chalk.hex('#1e3a6e');
+  const Bl = chalk.hex('#3b7dd8');
 
   const rows = [
     `     ${K('▄▄▄▄▄▄▄▄▄')}          `,
@@ -101,26 +98,22 @@ export function getLobsterAscii(): string {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TITLE
+// TITLE ART — Original block letters
 // ═══════════════════════════════════════════════════════════════
 
-/** ASCII art title — half-height block letters with gradient */
-function getTitleArt(): string {
+export function getTitleArt(): string {
   const raw = [
-    '  ▄▀▀▀ █ █ █ █▀▀▄ █▄ ▄█ ▄▀▀▄ █▀▀▄ █ █   ▄▀▀▀',
-    '  ▀▀▀▄ █▀▀█ █ █▀▀  █▀▄█ █  █ █▀▀▄ █ █   █▀▀ ',
-    '  ▀▀▀  ▀  ▀ ▀ ▀    ▀  ▀  ▀▀  ▀▀▀  ▀ ▀▀▀ ▀▀▀ ',
+    '  ███████╗██╗  ██╗██╗██████╗ ███╗   ███╗ ██████╗ ██████╗ ██╗██╗     ███████╗',
+    '  ██╔════╝██║  ██║██║██╔══██╗████╗ ████║██╔═══██╗██╔══██╗██║██║     ██╔════╝',
+    '  ███████╗███████║██║██████╔╝██╔████╔██║██║   ██║██████╔╝██║██║     █████╗  ',
+    '  ╚════██║██╔══██║██║██╔═══╝ ██║╚██╔╝██║██║   ██║██╔══██╗██║██║     ██╔══╝  ',
+    '  ███████║██║  ██║██║██║     ██║ ╚═╝ ██║╚██████╔╝██████╔╝██║███████╗███████╗',
+    '  ╚══════╝╚═╝  ╚═╝╚═╝╚═╝     ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═╝╚══════╝╚══════╝',
   ];
   return raw.map(line => shipGradient(line)).join('\n');
 }
 
-function renderTitle(version: string): string {
-  const art = getTitleArt();
-  const ver = colors.dim(`  v${version}`);
-  return `${art}\n${ver}`;
-}
-
-const TAGLINE = 'Ship React Native apps to the stores.';
+const TAGLINE = 'Your agent can build the app. ShipMobile ships it.';
 
 // ═══════════════════════════════════════════════════════════════
 // MAIN DISPLAY
@@ -137,45 +130,41 @@ function renderSprite(): void {
 
 /**
  * Full startup banner — shown on bare `shipmobile` command.
- * Dense two-column layout, dimmed secondary info, keyboard hints.
+ * Sprite + title art + command list.
  */
 export function printCommandList(version = '0.1.0'): void {
   console.log();
   renderSprite();
   console.log();
-  console.log(renderTitle(version));
-  console.log(`  ${colors.dim(TAGLINE)}`);
-  console.log(`  ${divider(52)}`);
+  console.log(getTitleArt());
+  console.log();
+  console.log('  ' + colors.dim(TAGLINE));
+  console.log('  ' + colors.dim(`v${version}`) + colors.dim(` ${figures.dot} `) + colors.dim('https://github.com/ACRLABSDEV/shipmobile'));
   console.log();
 
-  // Commands — clean columns, no emoji, status-colored
-  const commands: [string, string, boolean][] = [
-    ['login',    'Authenticate with Expo, Apple & Google',    true],
-    ['init',     'Detect project and create config',          true],
-    ['doctor',   'Run health checks (23 checks)',             true],
-    ['audit',    'Static analysis for store readiness',       true],
-    ['assets',   'Process icons, splash, screenshots',        true],
-    ['prepare',  'Generate store metadata & privacy policy',  true],
-    ['build',    'Trigger cloud build via EAS',               true],
-    ['status',   'Check build progress',                      true],
-    ['preview',  'Preview links + QR codes',                  true],
-    ['submit',   'Submit to App Store / Play Store',          true],
-    ['reset',    'Clear local config',                        true],
+  // Commands — all ready now (Phases 0-5 complete)
+  const commands: [string, string, string][] = [
+    ['🔐', 'login',    'Authenticate with Expo, Apple & Google Play'],
+    ['🔍', 'init',     'Detect project and create config'],
+    ['🩺', 'doctor',   'Run 23 health checks'],
+    ['📊', 'audit',    'Static analysis for store readiness'],
+    ['🖼️ ', 'assets',   'Process icons, splash, screenshots'],
+    ['📝', 'prepare',  'Generate store metadata & privacy policy'],
+    ['🔨', 'build',    'Trigger cloud build via EAS'],
+    ['📡', 'status',   'Check build progress'],
+    ['📱', 'preview',  'Preview links + QR codes'],
+    ['🚀', 'submit',   'Submit to App Store / Play Store'],
+    ['🔄', 'reset',    'Clear local config and start fresh'],
+    ['🤖', 'mcp',      'Start MCP server for AI agents'],
   ];
 
-  const maxName = Math.max(...commands.map(c => c[0].length));
+  const maxName = Math.max(...commands.map(c => c[1].length));
 
-  for (const [name, desc, ready] of commands) {
+  for (const [icon, name, desc] of commands) {
     const padded = name.padEnd(maxName + 2);
-    if (ready) {
-      console.log(`  ${colors.brand(padded)}${colors.dim(desc)}`);
-    } else {
-      console.log(`  ${colors.dim(padded + desc + '  (soon)')}`);
-    }
+    console.log(`  ${icon} ${colors.brand(padded)}${colors.dim(desc)}`);
   }
 
-  console.log();
-  console.log(`  ${colors.dim('Also available as MCP server:')} ${colors.suggestion('shipmobile-mcp')}`);
   console.log();
 
   const footer = boxen(
@@ -197,8 +186,10 @@ export function printBanner(version = '0.1.0'): void {
   console.log();
   renderSprite();
   console.log();
-  console.log(renderTitle(version));
-  console.log(`  ${colors.dim(TAGLINE)}`);
+  console.log(getTitleArt());
+  console.log();
+  console.log('  ' + colors.dim(TAGLINE));
+  console.log('  ' + colors.dim(`v${version}`));
   console.log();
 }
 
@@ -212,11 +203,14 @@ export function printHeader(command: string): void {
 
 /** Plain text for MCP/logs (no ANSI) */
 export const BANNER_PLAIN = `
-  ▄▀▀▀ █ █ █ █▀▀▄ █▄ ▄█ ▄▀▀▄ █▀▀▄ █ █   ▄▀▀▀
-  ▀▀▀▄ █▀▀█ █ █▀▀  █▀▄█ █  █ █▀▀▄ █ █   █▀▀
-  ▀▀▀  ▀  ▀ ▀ ▀    ▀  ▀  ▀▀  ▀▀▀  ▀ ▀▀▀ ▀▀▀
+  ███████╗██╗  ██╗██╗██████╗ ███╗   ███╗ ██████╗ ██████╗ ██╗██╗     ███████╗
+  ██╔════╝██║  ██║██║██╔══██╗████╗ ████║██╔═══██╗██╔══██╗██║██║     ██╔════╝
+  ███████╗███████║██║██████╔╝██╔████╔██║██║   ██║██████╔╝██║██║     █████╗
+  ╚════██║██╔══██║██║██╔═══╝ ██║╚██╔╝██║██║   ██║██╔══██╗██║██║     ██╔══╝
+  ███████║██║  ██║██║██║     ██║ ╚═╝ ██║╚██████╔╝██████╔╝██║███████╗███████╗
+  ╚══════╝╚═╝  ╚═╝╚═╝╚═╝     ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═╝╚══════╝╚══════╝
 
-  Ship React Native apps to the stores.
+  Your agent can build the app. ShipMobile ships it.
 `;
 
 export { getTitleArt };
