@@ -1,0 +1,104 @@
+---
+title: "update"
+description: "Publish OTA updates via EAS Update — push JS changes without a full rebuild."
+---
+
+# shipmobile update
+
+Publish over-the-air (OTA) updates to your users via [EAS Update](https://docs.expo.dev/eas-update/introduction/). Ship JavaScript and asset changes instantly without going through the app store review process.
+
+```bash
+shipmobile update
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `--channel <channel>` | Update channel | `production` |
+| `--message <message>` | Update message (shown in EAS dashboard) | — |
+| `--platform <platform>` | Target platform (`ios`, `android`, or `all`) | `all` |
+| `--branch <branch>` | EAS Update branch name | — |
+| `--non-interactive` | Skip all prompts (for CI) | `false` |
+
+## Channels
+
+Channels control which users receive the update:
+
+| Channel | Use Case |
+|---------|----------|
+| `production` | Live users on the store version |
+| `staging` | Internal testing before promoting to production |
+| `preview` | Development/preview builds |
+
+You can also use custom channel names (any string).
+
+## Native Change Detection
+
+Before publishing, ShipMobile automatically scans for native changes that **cannot** be delivered via OTA:
+
+<Accordion title="What counts as a native change?">
+  - **Config plugins** — Adding or modifying `plugins` in `app.json`
+  - **iOS entitlements** — Push notifications, associated domains, etc.
+  - **Android permissions** — New permissions in `app.json`
+  - **Native module changes** — Adding/upgrading packages like `react-native-*` or `expo-*`
+  - **Build numbers** — `ios.buildNumber` or `android.versionCode` changes
+  - **Google Services** — Changes to `googleServicesFile` config
+  - **Native directories** — Modifications in `ios/` or `android/` folders
+</Accordion>
+
+If native changes are detected, ShipMobile warns you that a full rebuild (`shipmobile build`) is needed instead.
+
+<Warning>
+  OTA updates can only deliver JavaScript and asset changes. Native code changes (new modules, permissions, entitlements) require a full binary build via `shipmobile build`.
+</Warning>
+
+## How It Works
+
+<Steps>
+  <Step title="Native change detection">
+    Compares current `app.json` config and `package.json` dependencies against the last update snapshot in `.shipmobile/`.
+  </Step>
+  <Step title="Publish via EAS">
+    Runs `eas update --channel <channel> --json --non-interactive` under the hood.
+  </Step>
+  <Step title="Save snapshot">
+    Saves current config and dependency state to `.shipmobile/last-update-config.json` and `.shipmobile/last-update-deps.json` for future comparison.
+  </Step>
+</Steps>
+
+## Examples
+
+```bash
+# Publish to production
+shipmobile update --message "Fix login bug"
+
+# Publish to staging channel, iOS only
+shipmobile update --channel staging --platform ios --message "Test new feature"
+
+# CI mode — no prompts
+shipmobile update --non-interactive --message "Automated hotfix"
+```
+
+## Error Codes
+
+| Code | Meaning | Fix |
+|------|---------|-----|
+| `EAS_AUTH_ERROR` | Not authenticated with EAS | Run `shipmobile login --expo` |
+| `UPDATE_FAILED` | EAS update failed | Check EAS config and `eas.json` |
+
+<Tip>
+  Use `shipmobile update` for quick JS fixes and `shipmobile build` for anything touching native code. See the [OTA Updates Guide](/guides/ota-updates) for a full workflow.
+</Tip>
+
+## Related Commands
+
+<CardGroup cols={2}>
+  <Card title="rollback" icon="rotate-left" href="/commands/rollback">
+    Revert an OTA update
+  </Card>
+  <Card title="build" icon="hammer" href="/commands/build">
+    Full binary build for native changes
+  </Card>
+</CardGroup>

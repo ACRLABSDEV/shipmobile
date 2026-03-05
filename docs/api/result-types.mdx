@@ -1,0 +1,144 @@
+---
+title: "Result Types"
+description: "The Result<T> type system — typed error handling for every ShipMobile operation."
+---
+
+# Result Types
+
+Every ShipMobile function returns a `Result<T>` — a discriminated union that makes error handling explicit and type-safe. No thrown exceptions, no ambiguous returns.
+
+## The `Result<T>` Type
+
+```typescript
+type Result<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: ShipMobileError };
+```
+
+### Success
+
+```typescript
+{ ok: true, data: { score: 94, findings: [...] } }
+```
+
+### Error
+
+```typescript
+{
+  ok: false,
+  error: {
+    code: "EAS_AUTH_ERROR",
+    message: "Not logged in to EAS",
+    severity: "critical",
+    suggestion: "Run `shipmobile login --expo` to authenticate"
+  }
+}
+```
+
+## `ShipMobileError`
+
+```typescript
+class ShipMobileError extends Error {
+  code: string;           // Machine-readable error code
+  message: string;        // Human-readable description
+  severity: 'critical' | 'warning' | 'info';
+  suggestion?: string;    // Actionable fix suggestion
+}
+```
+
+### Severity Levels
+
+| Severity | Meaning | Agent Action |
+|----------|---------|-------------|
+| `critical` | Operation failed, cannot proceed | Must fix before continuing |
+| `warning` | Operation succeeded with issues | Should fix, but can proceed |
+| `info` | Informational, non-blocking | Optional improvement |
+
+## Helper Functions
+
+```typescript
+import { ok, err } from 'shipmobile/utils/result';
+
+// Create success result
+const success = ok({ score: 94 });
+
+// Create error result
+const failure = err(
+  'EAS_AUTH_ERROR',           // code
+  'Not logged in to EAS',     // message
+  'critical',                 // severity
+  'Run shipmobile login'      // suggestion
+);
+```
+
+## Usage Pattern
+
+```typescript
+const result = await shipmobile.audit({ projectPath: './my-app' });
+
+if (result.ok) {
+  console.log(`Score: ${result.data.score}`);
+  console.log(`Findings: ${result.data.findings.length}`);
+} else {
+  console.error(`[${result.error.code}] ${result.error.message}`);
+  if (result.error.suggestion) {
+    console.log(`Fix: ${result.error.suggestion}`);
+  }
+}
+```
+
+## Error Codes by Command
+
+### Login
+| Code | Meaning |
+|------|---------|
+| `EXPO_AUTH_FAILED` | Expo token invalid or login failed |
+| `APPLE_AUTH_FAILED` | Apple API key authentication failed |
+| `GOOGLE_AUTH_FAILED` | Google service account auth failed |
+
+### Build
+| Code | Meaning |
+|------|---------|
+| `BUILD_FAILED` | EAS build errored |
+| `BUILD_TIMEOUT` | Build exceeded time limit |
+| `EAS_AUTH_ERROR` | Not authenticated with EAS |
+
+### Update / Rollback
+| Code | Meaning |
+|------|---------|
+| `EAS_AUTH_ERROR` | Not authenticated with EAS |
+| `UPDATE_FAILED` | OTA update failed |
+| `NO_UPDATES` | No updates on channel |
+| `NO_PREVIOUS_UPDATE` | Only one update, can't rollback |
+| `ROLLBACK_FAILED` | Republish operation failed |
+| `ROLLBACK_LIST_FAILED` | Failed to list update groups |
+
+### Doctor / Audit
+| Code | Meaning |
+|------|---------|
+| `PROJECT_NOT_FOUND` | Project path doesn't exist |
+| `NO_RULES` | No rules for specified category |
+
+## MCP Response Format
+
+When accessed via MCP, results are returned as JSON:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "score": 94,
+    "critical": [],
+    "warnings": [{ "rule": "large-images", "message": "..." }],
+    "info": [],
+    "metrics": {
+      "totalFiles": 42,
+      "totalRules": 25,
+      "rulesRun": 25,
+      "duration": 1234
+    }
+  }
+}
+```
+
+Agents should always check `ok` before accessing `data`.

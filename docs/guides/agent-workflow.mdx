@@ -1,0 +1,193 @@
+---
+title: "Agent Workflow"
+description: "How AI agents should use ShipMobile via MCP — step-by-step patterns and best practices."
+---
+
+# Agent Workflow Guide
+
+This guide is for AI agents (Cursor, Claude, OpenClaw, Windsurf, Cline) using ShipMobile through the MCP server. It covers the exact tool call sequence, decision points, and error handling patterns.
+
+## Setup
+
+Add ShipMobile as an MCP server in your client config:
+
+```json
+{
+  "mcpServers": {
+    "shipmobile": {
+      "command": "shipmobile",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+All tools return structured JSON with the `Result<T>` type — either `{ ok: true, data: ... }` or `{ ok: false, error: { code, message, severity, suggestion } }`.
+
+## The Standard Deploy Flow
+
+<Steps>
+  <Step title="Initialize">
+    ```
+    shipmobile_init({ project_path: "/path/to/app" })
+    ```
+    **Check:** Did it detect the project type? Are bundle IDs set? If not, provide them:
+    ```
+    shipmobile_init({ project_path: "/path/to/app", bundle_id: "com.company.app" })
+    ```
+  </Step>
+
+  <Step title="Authenticate">
+    ```
+    shipmobile_login({ provider: "expo", expo_token: "..." })
+    shipmobile_login({ provider: "apple", apple_key_id: "...", apple_issuer_id: "...", apple_key_path: "..." })
+    shipmobile_login({ provider: "google", google_service_account: "..." })
+    ```
+    **Check:** Use `shipmobile_login({ status: true })` to verify connections.
+  </Step>
+
+  <Step title="Health Check Loop">
+    ```
+    result = shipmobile_doctor({ project_path: "..." })
+    ```
+    If there are critical issues:
+    ```
+    shipmobile_doctor({ project_path: "...", fix: true })
+    ```
+    **Decision:** If auto-fix doesn't resolve critical issues, inform the user with the specific `suggestion` from the error.
+  </Step>
+
+  <Step title="Audit Loop">
+    ```
+    result = shipmobile_audit({ project_path: "..." })
+    ```
+    If `score < 80`:
+    ```
+    shipmobile_audit({ project_path: "...", fix: true })
+    ```
+    **Decision:** Review remaining findings. Fix what you can in code, then re-audit. Target 80+ before proceeding.
+  </Step>
+
+  <Step title="Assets">
+    ```
+    shipmobile_assets({ project_path: "...", icon_path: "./assets/icon.png" })
+    ```
+  </Step>
+
+  <Step title="Metadata">
+    ```
+    shipmobile_prepare({ project_path: "..." })
+    ```
+    Optionally override fields:
+    ```
+    shipmobile_prepare({
+      project_path: "...",
+      app_name: "My App",
+      description: "A great app",
+      keywords: ["productivity", "tools"]
+    })
+    ```
+  </Step>
+
+  <Step title="Build">
+    ```
+    shipmobile_build({ project_path: "...", wait: true })
+    ```
+    If `wait: false`, poll with:
+    ```
+    shipmobile_status({ project_path: "..." })
+    ```
+    Repeat until status is `finished` or `errored`.
+  </Step>
+
+  <Step title="Preview">
+    ```
+    shipmobile_preview({ project_path: "..." })
+    ```
+    Share the TestFlight/download links with the user.
+  </Step>
+
+  <Step title="Submit">
+    ```
+    shipmobile_submit({ project_path: "..." })
+    ```
+  </Step>
+</Steps>
+
+## Error Handling Pattern
+
+Every tool returns a `Result<T>`. Always check `ok`:
+
+```
+result = shipmobile_build(...)
+
+if result.ok:
+  build_id = result.data.buildId
+  # proceed
+else:
+  code = result.error.code      # e.g., "EAS_AUTH_ERROR"
+  message = result.error.message # human-readable
+  fix = result.error.suggestion  # what to do
+  # act on suggestion or inform user
+```
+
+### Common Error Codes
+
+| Code | Meaning | Agent Action |
+|------|---------|-------------|
+| `EAS_AUTH_ERROR` | Not logged in to EAS | Call `shipmobile_login({ provider: "expo" })` |
+| `PROJECT_NOT_FOUND` | Invalid project path | Verify path exists |
+| `BUILD_FAILED` | EAS build errored | Check logs with `shipmobile_status({ logs: true })` |
+| `UPDATE_FAILED` | OTA update failed | Check EAS config |
+| `NO_UPDATES` | No updates to rollback | Publish first |
+
+## OTA Update Flow
+
+For JS-only changes after initial deploy:
+
+```
+shipmobile_update({
+  project_path: "...",
+  channel: "production",
+  message: "Fix login bug",
+  non_interactive: true
+})
+```
+
+If something goes wrong:
+```
+shipmobile_rollback({
+  project_path: "...",
+  channel: "production"
+})
+```
+
+## Decision Tree
+
+```
+Has the project been initialized?
+├─ No → shipmobile_init()
+└─ Yes
+   Are accounts connected?
+   ├─ No → shipmobile_login() for each provider
+   └─ Yes
+      Does doctor pass? (no criticals)
+      ├─ No → shipmobile_doctor({ fix: true }), then re-check
+      └─ Yes
+         Is audit score ≥ 80?
+         ├─ No → shipmobile_audit({ fix: true }), fix code, re-audit
+         └─ Yes
+            Is this a JS-only change to an existing app?
+            ├─ Yes → shipmobile_update()
+            └─ No → shipmobile_build() → shipmobile_submit()
+```
+
+## Tips for Agents
+
+<Note>
+  - Always use `non_interactive: true` or equivalent flags — agents can't respond to terminal prompts
+  - Use `wait: true` on builds to avoid polling loops
+  - Check `shipmobile_login({ status: true })` before starting — saves time on auth errors
+  - The audit `--fix` flag is safe to run — it only removes `console.log` and similar low-risk fixes
+  - Save build IDs from `shipmobile_build` responses for use in `shipmobile_status` and `shipmobile_preview`
+</Note>

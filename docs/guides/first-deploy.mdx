@@ -1,0 +1,188 @@
+---
+title: "First Deploy"
+description: "Complete walkthrough: from shipmobile init to your app live on the App Store and Play Store."
+---
+
+# Your First Deploy
+
+This guide walks you through shipping a React Native / Expo app from zero to live on the stores. Every step, every command, no hand-waving.
+
+## Prerequisites
+
+<Accordion title="What you need before starting">
+  - **Node.js 18+** installed
+  - A **React Native or Expo** project that runs locally
+  - An **Apple Developer** account ($99/year) — for iOS
+  - A **Google Play Developer** account ($25 one-time) — for Android
+  - An **Expo** account (free) — for EAS Build
+  - **EAS CLI** installed: `npm install -g eas-cli`
+</Accordion>
+
+## The Full Flow
+
+<Steps>
+  <Step title="Install ShipMobile">
+    ```bash
+    npm install -g shipmobile
+    ```
+
+    Verify it works:
+
+    ```bash
+    shipmobile --version
+    ```
+  </Step>
+
+  <Step title="Connect Your Accounts">
+    ```bash
+    shipmobile login
+    ```
+
+    The interactive wizard walks you through three providers:
+
+    <Tabs>
+      <Tab title="Expo/EAS">
+        You'll be prompted to log in to your Expo account. If you have an access token, you can also use:
+        ```bash
+        shipmobile login --expo-token YOUR_TOKEN
+        ```
+      </Tab>
+      <Tab title="Apple Developer">
+        You'll need an [App Store Connect API Key](https://appstoreconnect.apple.com/access/integrations/api):
+        1. Go to App Store Connect → Users and Access → Integrations → App Store Connect API
+        2. Generate a new key with **Admin** role
+        3. Download the `.p8` file
+        4. Note the **Key ID** and **Issuer ID**
+
+        ```bash
+        shipmobile login \
+          --apple-key-id YOUR_KEY_ID \
+          --apple-issuer-id YOUR_ISSUER_ID \
+          --apple-key-path ./AuthKey_XXXXX.p8
+        ```
+      </Tab>
+      <Tab title="Google Play">
+        You'll need a [service account](https://developers.google.com/android-publisher/getting_started):
+        1. Go to Google Cloud Console → IAM → Service Accounts
+        2. Create a service account with **Editor** role
+        3. Download the JSON key file
+        4. In Google Play Console, grant the service account access
+
+        ```bash
+        shipmobile login --google-service-account ./service-account.json
+        ```
+      </Tab>
+    </Tabs>
+
+    Verify all connections:
+    ```bash
+    shipmobile login --status
+    ```
+  </Step>
+
+  <Step title="Initialize Your Project">
+    ```bash
+    cd your-app
+    shipmobile init
+    ```
+
+    This auto-detects your project type, creates `eas.json` with build profiles, and sets up the `.shipmobile/` config directory. If you need a specific bundle ID:
+
+    ```bash
+    shipmobile init --bundle-id com.yourcompany.yourapp
+    ```
+  </Step>
+
+  <Step title="Run Health Checks">
+    ```bash
+    shipmobile doctor
+    ```
+
+    This runs 23 checks. Fix any critical issues:
+
+    ```bash
+    shipmobile doctor --fix
+    ```
+
+    Common fixes: missing `eas.json`, unset bundle IDs, missing app icon.
+  </Step>
+
+  <Step title="Audit Your Code">
+    ```bash
+    shipmobile audit
+    ```
+
+    Aim for a score of **80+** before shipping. Auto-fix what you can:
+
+    ```bash
+    shipmobile audit --fix
+    ```
+
+    Review remaining findings manually. See the [Audit Rules Guide](/guides/audit-rules) for details on each rule.
+  </Step>
+
+  <Step title="Prepare Assets">
+    Make sure you have a 1024×1024 PNG icon, then:
+
+    ```bash
+    shipmobile assets --icon ./assets/icon.png
+    ```
+
+    This generates all required icon sizes for both platforms.
+  </Step>
+
+  <Step title="Generate Store Metadata">
+    ```bash
+    shipmobile prepare
+    ```
+
+    Review the generated metadata in `.shipmobile/metadata/`. Edit titles, descriptions, and keywords as needed.
+  </Step>
+
+  <Step title="Build">
+    ```bash
+    shipmobile build --wait
+    ```
+
+    This triggers EAS builds for both iOS and Android and waits for completion. Track progress:
+
+    ```bash
+    shipmobile status
+    ```
+  </Step>
+
+  <Step title="Preview & Test">
+    ```bash
+    shipmobile preview
+    ```
+
+    Scan the QR code to install via TestFlight (iOS) or download the APK (Android). Test thoroughly!
+  </Step>
+
+  <Step title="Submit to Stores">
+    ```bash
+    shipmobile submit
+    ```
+
+    This uploads your build and metadata to App Store Connect and Google Play. Pre-flight checks run automatically.
+
+    🎉 **You're live.** (Well, after Apple reviews it — usually 24–48 hours.)
+  </Step>
+</Steps>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="OTA Updates" icon="bolt" href="/guides/ota-updates">
+    Ship JS fixes without rebuilding
+  </Card>
+  <Card title="CI/CD" icon="gear" href="/advanced/ci-cd">
+    Automate this in your pipeline
+  </Card>
+  <Card title="Audit Rules" icon="magnifying-glass" href="/guides/audit-rules">
+    Understand every audit rule
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Common issues and fixes
+  </Card>
+</CardGroup>

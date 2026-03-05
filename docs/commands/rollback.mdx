@@ -1,0 +1,80 @@
+---
+title: "rollback"
+description: "Revert OTA updates by republishing a previous update group."
+---
+
+# shipmobile rollback
+
+Revert an OTA update by republishing a previous update group on the specified channel. Uses `eas update:republish` under the hood.
+
+```bash
+shipmobile rollback
+```
+
+## Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --path <path>` | Project path | `.` |
+| `--channel <channel>` | Target channel to rollback | `production` |
+| `--group <groupId>` | Specific update group ID to roll back to | Previous (2nd most recent) |
+| `--platform <platform>` | Target platform (`ios`, `android`, or `all`) | `all` |
+| `--non-interactive` | Skip all prompts (for CI) | `false` |
+
+## How It Works
+
+<Steps>
+  <Step title="List update groups">
+    Fetches the 10 most recent update groups on the specified channel via `eas update:list`.
+  </Step>
+  <Step title="Select target">
+    If `--group` is specified, rolls back to that group. Otherwise, defaults to the **second most recent** group (the one before the current update).
+  </Step>
+  <Step title="Republish">
+    Runs `eas update:republish --group <groupId>` to push the previous version to all users on that channel.
+  </Step>
+</Steps>
+
+## Examples
+
+```bash
+# Roll back production to the previous update
+shipmobile rollback
+
+# Roll back staging channel
+shipmobile rollback --channel staging
+
+# Roll back to a specific update group
+shipmobile rollback --group 01234567-abcd-ef01-2345-6789abcdef01
+
+# Roll back iOS only
+shipmobile rollback --platform ios
+```
+
+## Error Codes
+
+| Code | Meaning | Fix |
+|------|---------|-----|
+| `NO_UPDATES` | No updates exist on this channel | Publish an update first with `shipmobile update` |
+| `NO_PREVIOUS_UPDATE` | Only one update exists — nothing to roll back to | Need at least 2 updates for rollback |
+| `ROLLBACK_LIST_FAILED` | Failed to fetch update groups from EAS | Check EAS config and authentication |
+| `ROLLBACK_FAILED` | The republish operation failed | Verify the group ID and try again |
+
+<Note>
+  Rollback doesn't delete the bad update — it republishes the previous version on top. Users will receive the older version on next app launch.
+</Note>
+
+<Tip>
+  Always test OTA updates on a `staging` channel before pushing to `production`. This makes rollbacks a last resort rather than a regular occurrence. See the [OTA Updates Guide](/guides/ota-updates) for best practices.
+</Tip>
+
+## Related Commands
+
+<CardGroup cols={2}>
+  <Card title="update" icon="cloud-arrow-up" href="/commands/update">
+    Publish OTA updates
+  </Card>
+  <Card title="status" icon="signal" href="/commands/status">
+    Check build and update status
+  </Card>
+</CardGroup>

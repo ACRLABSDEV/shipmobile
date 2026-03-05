@@ -1,0 +1,120 @@
+---
+title: "OTA Updates"
+description: "When to use OTA vs full builds, channel strategy, and rollback workflows."
+---
+
+# OTA Update Workflow
+
+EAS Update lets you push JavaScript and asset changes to users instantly — no app store review, no waiting. ShipMobile wraps this with native change detection and a clean CLI.
+
+## OTA vs Full Build
+
+The most important decision: **can this change be delivered OTA?**
+
+| Change Type | OTA? | Command |
+|-------------|------|---------|
+| Bug fix in JS/TS code | ✅ Yes | `shipmobile update` |
+| New screen or feature (JS only) | ✅ Yes | `shipmobile update` |
+| Updated images/assets | ✅ Yes | `shipmobile update` |
+| New native module (`expo-camera`, etc.) | ❌ No | `shipmobile build` |
+| Changed permissions | ❌ No | `shipmobile build` |
+| Added config plugin | ❌ No | `shipmobile build` |
+| Updated `ios.entitlements` | ❌ No | `shipmobile build` |
+| Changed `buildNumber` / `versionCode` | ❌ No | `shipmobile build` |
+
+<Warning>
+  ShipMobile automatically detects native changes and warns you. But when in doubt, do a full build — a broken OTA update is worse than a slow release.
+</Warning>
+
+## Channel Strategy
+
+Channels let you target different user groups. Here's a recommended setup:
+
+```
+preview    → Development builds (internal team)
+staging    → QA and testing before production
+production → Live users on the store
+```
+
+### Recommended Workflow
+
+<Steps>
+  <Step title="Develop & test locally">
+    Normal development workflow. Make sure the app runs.
+  </Step>
+  <Step title="Push to staging">
+    ```bash
+    shipmobile update --channel staging --message "New feature: dark mode"
+    ```
+  </Step>
+  <Step title="Test on staging">
+    Team members with staging builds verify the update.
+  </Step>
+  <Step title="Promote to production">
+    ```bash
+    shipmobile update --channel production --message "v1.2.1: dark mode"
+    ```
+  </Step>
+  <Step title="Monitor">
+    If issues are reported, roll back immediately:
+    ```bash
+    shipmobile rollback --channel production
+    ```
+  </Step>
+</Steps>
+
+## Rollback Strategy
+
+Rollbacks republish the previous update group — users get the older version on next app launch.
+
+```bash
+# Roll back to the previous update
+shipmobile rollback
+
+# Roll back to a specific group
+shipmobile rollback --group <group-id>
+
+# Roll back only iOS
+shipmobile rollback --platform ios
+```
+
+<Note>
+  Rollback doesn't delete the bad update. It publishes the previous version on top. The bad update still exists in your history.
+</Note>
+
+### When to Rollback vs Hotfix
+
+| Situation | Action |
+|-----------|--------|
+| Critical crash affecting all users | **Rollback immediately**, then fix |
+| Minor bug, partial impact | **Hotfix** — push a new update |
+| Wrong content/copy | **Hotfix** — push corrected version |
+| Performance regression | **Rollback** if severe, hotfix if minor |
+
+## CI/CD Integration
+
+```yaml
+# In your GitHub Actions workflow
+- name: OTA Update
+  run: |
+    shipmobile login --expo-token ${{ secrets.EXPO_TOKEN }}
+    shipmobile update \
+      --channel production \
+      --message "Release ${{ github.sha }}" \
+      --non-interactive
+```
+
+## Native Change Detection
+
+ShipMobile compares your current state against `.shipmobile/last-update-config.json` and `.shipmobile/last-update-deps.json`. It checks:
+
+- Config plugin changes in `app.json`
+- iOS/Android native config keys (entitlements, permissions, build numbers)
+- New or upgraded native modules in `package.json`
+- Presence of `ios/` or `android/` directories
+
+If any native changes are detected, you'll see a warning with specific details about what changed.
+
+<Tip>
+  Keep your OTA updates small and frequent. Big updates take longer to download and have a higher risk of issues.
+</Tip>

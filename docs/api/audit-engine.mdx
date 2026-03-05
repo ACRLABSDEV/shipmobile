@@ -1,0 +1,179 @@
+---
+title: "Audit Engine"
+description: "How the audit engine works — Babel AST analysis, rule structure, scoring, and writing custom rules."
+---
+
+# Audit Engine
+
+The audit engine is ShipMobile's static analysis system. It parses your source code into ASTs using Babel, runs 25 rules across 5 categories, and produces a scored report with actionable findings.
+
+## Architecture
+
+```
+Source Files → Babel Parser → AST → Rules → Findings → Score
+```
+
+1. **Discovery** — `buildAuditContext()` scans the project for `.js`, `.jsx`, `.ts`, `.tsx` files
+2. **Parsing** — Each file is parsed into a Babel AST
+3. **Rule execution** — Each rule traverses the ASTs looking for patterns
+4. **Scoring** — Findings are weighted by severity and subtracted from 100
+5. **Reporting** — Results grouped by category with fix suggestions
+
+## Audit Context
+
+The `AuditContext` is built by the discovery module and passed to every rule:
+
+```typescript
+interface AuditContext {
+  projectPath: string;
+  files: AuditFile[];      // Parsed source files with ASTs
+  appJson: object;         // Parsed app.json / app.config
+  packageJson: object;     // Parsed package.json
+  dependencies: Record<string, string>;
+}
+
+interface AuditFile {
+  path: string;
+  content: string;
+  ast: babel.File;         // Babel AST
+}
+```
+
+## Rule Structure
+
+Each rule implements the `AuditRule` interface:
+
+```typescript
+interface AuditRule {
+  id: string;                              // e.g., "hermes-check"
+  category: AuditCategory;                 // performance | memory | ux | compliance | security
+  severity: 'critical' | 'warning' | 'info';
+  title: string;
+  description: string;
+  check(context: AuditContext): AuditFinding[];
+  fix?(context: AuditContext): Promise<number>;  // Optional auto-fix, returns count of fixes
+}
+
+interface AuditFinding {
+  rule: string;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  file?: string;
+  line?: number;
+  suggestion?: string;
+}
+```
+
+### Rule Organization
+
+Rules are organized by category in the source:
+
+```
+src/analyzers/rules/
+├── index.ts          # Exports allRules, getRulesByCategory()
+├── performance/      # bundle-size, heavy-deps, unused-imports, large-images, hermes-check
+├── memory/           # useeffect-cleanup, uncleared-timers, event-listener-leak, flatlist-usage, native-driver
+├── ux/               # touch-target-size, font-size-minimum, safe-area, keyboard-avoidance, dark-mode, accessibility-labels
+├── compliance/       # no-console-log, hardcoded-secrets, unused-permissions, missing-permissions, privacy-manifest, version-production
+└── security/         # hardcoded-urls, debug-flags, exposed-env
+```
+
+## Scoring Formula
+
+```typescript
+function calculateScore(findings: AuditFinding[]): number {
+  let score = 100;
+  for (const f of findings) {
+    if (f.severity === 'critical') score -= 10;
+    else if (f.severity === 'warning') score -= 3;
+    else score -= 1;  // info
+  }
+  return Math.max(0, score);
+}
+```
+
+| Severity | Point Deduction | Rationale |
+|----------|----------------|-----------|
+| Critical | −10 | Blockers: security holes, hardcoded secrets |
+| Warning | −3 | Should fix: memory leaks, missing safe areas |
+| Info | −1 | Nice to have: unused imports, dark mode |
+
+## Auto-Fix
+
+Rules with a `fix()` method can automatically remediate issues:
+
+```typescript
+// Example: no-console-log rule fix
+async fix(context: AuditContext): Promise<number> {
+  let fixed = 0;
+  for (const file of context.files) {
+    // Use Babel traverse to find console.log calls
+    // Remove the expression statement
+    // Write the modified file back
+    fixed++;
+  }
+  return fixed;
+}
+```
+
+When `shipmobile audit --fix` is run:
+1. All rules with `fix()` are executed
+2. The context is rebuilt (files re-parsed)
+3. All rules are re-run on the fixed code
+4. The new score is reported
+
+## Diff Mode
+
+Audit results are saved to `.shipmobile/audit-history/latest.json`. When `--diff` is used, the engine compares:
+
+- Score delta (e.g., "Score improved from 72 to 88")
+- New findings not in the previous run
+- Resolved findings that were fixed
+
+## Writing a Custom Rule
+
+```typescript
+import type { AuditRule, AuditContext, AuditFinding } from '../types';
+
+export const myCustomRule: AuditRule = {
+  id: 'no-inline-styles',
+  category: 'performance',
+  severity: 'info',
+  title: 'No Inline Styles',
+  description: 'Inline styles create new objects on every render',
+
+  check(context: AuditContext): AuditFinding[] {
+    const findings: AuditFinding[] = [];
+
+    for (const file of context.files) {
+      // Use @babel/traverse to walk the AST
+      traverse(file.ast, {
+        JSXAttribute(path) {
+          if (
+            path.node.name.name === 'style' &&
+            path.node.value?.type === 'JSXExpressionContainer' &&
+            path.node.value.expression.type === 'ObjectExpression'
+          ) {
+            findings.push({
+              rule: 'no-inline-styles',
+              severity: 'info',
+              message: 'Inline style object creates new reference on every render',
+              file: file.path,
+              line: path.node.loc?.start.line,
+              suggestion: 'Use StyleSheet.create() or move styles outside the component',
+            });
+          }
+        },
+      });
+    }
+
+    return findings;
+  },
+};
+```
+
+Register it in `src/analyzers/rules/index.ts`:
+```typescript
+import { myCustomRule } from './performance/no-inline-styles';
+export const allRules: AuditRule[] = [...existingRules, myCustomRule];
+```

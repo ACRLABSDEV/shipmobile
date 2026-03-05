@@ -31,12 +31,16 @@
       "url": "commands"
     },
     {
+      "name": "Guides",
+      "url": "guides"
+    },
+    {
       "name": "MCP Server",
       "url": "mcp"
     },
     {
-      "name": "Advanced",
-      "url": "advanced"
+      "name": "API Reference",
+      "url": "api"
     }
   ],
   "anchors": [
@@ -69,7 +73,20 @@
         "commands/status",
         "commands/preview",
         "commands/submit",
+        "commands/update",
+        "commands/rollback",
         "commands/reset"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/first-deploy",
+        "guides/expo-to-store",
+        "guides/ota-updates",
+        "guides/audit-rules",
+        "guides/agent-workflow",
+        "guides/troubleshooting"
       ]
     },
     {
@@ -77,8 +94,20 @@
       "pages": ["mcp/overview", "mcp/tools"]
     },
     {
+      "group": "API Reference",
+      "pages": [
+        "api/result-types",
+        "api/services",
+        "api/audit-engine"
+      ]
+    },
+    {
       "group": "Advanced",
-      "pages": ["advanced/ci-cd", "advanced/configuration"]
+      "pages": [
+        "advanced/ci-cd",
+        "advanced/configuration",
+        "contributing"
+      ]
     }
   ],
   "footerSocials": {

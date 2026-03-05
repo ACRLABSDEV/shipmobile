@@ -1,0 +1,168 @@
+---
+title: "Services"
+description: "The service abstraction layer — EAS Build, App Store Connect, Google Play, and EAS Update."
+---
+
+# Service Architecture
+
+ShipMobile uses a service abstraction pattern for all external interactions. Each service wraps a third-party API (EAS CLI, App Store Connect, Google Play) behind a typed interface that's fully mockable for testing.
+
+## Pattern
+
+```
+CLI Command → Core Module → Service Interface → Real Implementation (shells out to CLI / calls API)
+                                              → Mock Implementation (for tests)
+```
+
+Every service follows this pattern:
+1. **Interface** — Typed contract with methods and return types
+2. **Real implementation** — Shells out to CLI tools or makes HTTP calls
+3. **Singleton getter/setter** — `getXService()`, `setXService()`, `resetXService()`
+
+## EAS Build Service
+
+**File:** `src/services/eas.ts`
+
+Wraps `eas-cli` for cloud builds.
+
+```typescript
+interface EASService {
+  triggerBuild(request: EASBuildRequest): Promise<EASBuildInfo>;
+  getBuildStatus(buildId: string, projectDir: string): Promise<EASBuildInfo>;
+  listBuilds(projectDir: string, options?: ListOptions): Promise<EASBuildInfo[]>;
+  cancelBuild(buildId: string, projectDir: string): Promise<void>;
+}
+```
+
+### Key Types
+
+```typescript
+type BuildPlatform = 'ios' | 'android';
+type BuildProfile = 'development' | 'preview' | 'production';
+type BuildPhase = 'queued' | 'provisioning' | 'installing_dependencies'
+  | 'building' | 'uploading' | 'finished' | 'errored' | 'canceled';
+
+interface EASBuildRequest {
+  platform: BuildPlatform;
+  profile: BuildProfile;
+  projectDir: string;
+  nonInteractive?: boolean;
+}
+
+interface EASBuildInfo {
+  id: string;
+  platform: BuildPlatform;
+  status: BuildPhase;
+  profile: BuildProfile;
+  // ... artifacts, logs, etc.
+}
+```
+
+## EAS Update Service
+
+**File:** `src/services/eas-update.ts`
+
+Wraps `eas-cli` for OTA updates.
+
+```typescript
+interface EASUpdateService {
+  publishUpdate(request: EASUpdateRequest): Promise<EASUpdatePublishResult>;
+  listUpdateGroups(projectDir: string, options?: ListOptions): Promise<EASUpdateGroup[]>;
+  listChannels(projectDir: string): Promise<EASChannelInfo[]>;
+  rollbackToGroup(projectDir: string, groupId: string, options?: RollbackOptions): Promise<EASUpdatePublishResult>;
+}
+```
+
+### Key Types
+
+```typescript
+type UpdatePlatform = 'ios' | 'android' | 'all';
+type UpdateChannel = 'production' | 'staging' | 'preview' | string;
+
+interface EASUpdateRequest {
+  projectDir: string;
+  channel?: UpdateChannel;
+  message?: string;
+  platform?: UpdatePlatform;
+  branch?: string;
+  nonInteractive?: boolean;
+}
+
+interface EASUpdateGroup {
+  id: string;
+  group: string;
+  message?: string;
+  runtimeVersion: string;
+  platform: string;
+  createdAt: string;
+  channel?: string;
+  isRollback?: boolean;
+}
+```
+
+## App Store Connect Service
+
+**File:** `src/services/appstore.ts`
+
+Uses the [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi) with JWT authentication via your `.p8` key.
+
+```typescript
+interface AppStoreService {
+  submit(request: AppStoreSubmitRequest): Promise<AppStoreSubmission>;
+  getSubmissionStatus(submissionId: string): Promise<SubmissionStatus>;
+  uploadMetadata(metadata: AppStoreMetadata): Promise<void>;
+}
+```
+
+### Authentication
+
+Generates JWT tokens using the `jose` library with your App Store Connect API key:
+- **Key ID** — From App Store Connect
+- **Issuer ID** — Your team's issuer ID
+- **Private key** — The `.p8` file content
+
+## Google Play Service
+
+**File:** `src/services/playstore.ts`
+
+Uses the [Google Play Developer API v3](https://developers.google.com/android-publisher) with service account authentication.
+
+```typescript
+interface PlayStoreService {
+  submit(request: PlayStoreSubmitRequest): Promise<PlayStoreSubmission>;
+  getSubmissionStatus(packageName: string, editId: string): Promise<PlayStoreStatus>;
+  uploadMetadata(metadata: PlayStoreMetadata): Promise<void>;
+}
+```
+
+### Tracks
+
+| Track | Purpose |
+|-------|---------|
+| `internal` | Internal testing (up to 100 testers) |
+| `alpha` | Closed testing |
+| `beta` | Open testing |
+| `production` | Public release |
+
+## Testing with Mocks
+
+Every service can be swapped for a mock implementation:
+
+```typescript
+import { setEASUpdateService, resetEASUpdateService } from './services/eas-update';
+
+// In tests
+const mockService: EASUpdateService = {
+  publishUpdate: async () => ({ id: 'test', group: 'test-group', ... }),
+  listUpdateGroups: async () => [],
+  listChannels: async () => [],
+  rollbackToGroup: async () => ({ ... }),
+};
+
+setEASUpdateService(mockService);
+
+// After tests
+resetEASUpdateService();
+```
+
+This pattern enables full unit testing without network calls or CLI dependencies.

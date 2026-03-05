@@ -1,0 +1,175 @@
+---
+title: "Troubleshooting"
+description: "Common errors and how to fix them."
+---
+
+# Troubleshooting
+
+## Authentication Issues
+
+<Accordion title="EAS_AUTH_ERROR: Not logged in to EAS">
+  **Cause:** Your Expo/EAS token is missing or expired.
+
+  **Fix:**
+  ```bash
+  shipmobile login --expo
+  # Or with a token:
+  shipmobile login --expo-token YOUR_TOKEN
+  ```
+
+  **Verify:**
+  ```bash
+  shipmobile login --status
+  ```
+</Accordion>
+
+<Accordion title="Apple credentials invalid or expired">
+  **Cause:** Your App Store Connect API key has expired or the `.p8` file path is wrong.
+
+  **Fix:**
+  1. Verify the `.p8` file exists at the path you specified
+  2. Check that the Key ID and Issuer ID are correct
+  3. Re-authenticate:
+  ```bash
+  shipmobile login --apple-key-id KEY_ID --apple-issuer-id ISSUER_ID --apple-key-path ./AuthKey.p8
+  ```
+</Accordion>
+
+<Accordion title="Google Play service account permission denied">
+  **Cause:** The service account doesn't have sufficient permissions in Google Play Console.
+
+  **Fix:**
+  1. Go to Google Play Console → Settings → API access
+  2. Ensure the service account has **Admin** or **Release Manager** permissions
+  3. Wait 24 hours for permission changes to propagate (Google is slow)
+  4. Re-authenticate:
+  ```bash
+  shipmobile login --google-service-account ./service-account.json
+  ```
+</Accordion>
+
+## Build Issues
+
+<Accordion title="BUILD_FAILED: EAS build errored">
+  **Steps:**
+  1. Check build logs:
+  ```bash
+  shipmobile status --logs
+  ```
+  2. Common causes:
+     - **Missing credentials** — iOS builds need Apple creds configured in EAS
+     - **Incompatible dependencies** — Check `shipmobile doctor` output
+     - **Out of memory** — Large projects may need `large` resource class in `eas.json`
+
+  3. Run doctor and fix issues:
+  ```bash
+  shipmobile doctor --fix
+  ```
+</Accordion>
+
+<Accordion title="eas-cli not found">
+  **Cause:** EAS CLI is not installed or not in PATH.
+
+  **Fix:**
+  ```bash
+  npm install -g eas-cli
+  ```
+
+  Verify: `eas --version`
+</Accordion>
+
+<Accordion title="Build succeeds but app crashes on launch">
+  **Possible causes:**
+  - Missing native module configuration (check config plugins)
+  - Hermes compilation issue — try disabling Hermes temporarily
+  - Runtime error in app initialization
+
+  **Debug:**
+  ```bash
+  # Get a development build for debugging
+  shipmobile build --profile development --platform ios
+  ```
+</Accordion>
+
+## Submission Issues
+
+<Accordion title="App rejected by Apple">
+  Common rejection reasons and fixes:
+
+  | Reason | Fix |
+  |--------|-----|
+  | Missing privacy policy URL | Add to `app.json` under `expo.ios.privacyManifests` |
+  | Login required but no demo account | Provide demo credentials in App Store Connect |
+  | Incomplete metadata | Run `shipmobile prepare` and review `.shipmobile/metadata/` |
+  | Guideline 4.3 (spam/copycat) | Make your app more unique |
+  | Missing purpose strings | Add `NSCameraUsageDescription` etc. to `infoPlist` |
+</Accordion>
+
+<Accordion title="Google Play review taking too long">
+  First submissions typically take 3–7 days. Subsequent updates are usually 1–3 days. If it's been longer:
+  1. Check Play Console for policy issues
+  2. Ensure your app meets all [Play Store policies](https://play.google.com/about/developer-content-policy/)
+</Accordion>
+
+## OTA Update Issues
+
+<Accordion title="UPDATE_FAILED: OTA update failed">
+  **Steps:**
+  1. Verify EAS authentication: `shipmobile login --status`
+  2. Check your `eas.json` has an `update` configuration
+  3. Ensure you're targeting a valid channel
+  4. Try with `--non-interactive` flag for clearer error output
+</Accordion>
+
+<Accordion title="Update published but users don't see changes">
+  **Possible causes:**
+  - **Wrong channel** — Users on `production` won't see updates pushed to `staging`
+  - **Runtime version mismatch** — OTA updates only work if the runtime version matches the binary. If you changed native code, users need a full binary update first.
+  - **Caching** — Updates are downloaded in the background. Users see changes on the next app launch (not the current session).
+</Accordion>
+
+<Accordion title="Native changes detected — cannot use OTA">
+  ShipMobile detected changes that require a full binary build. Common triggers:
+  - Added a new config plugin
+  - Changed iOS entitlements or Android permissions
+  - Added/upgraded a native module
+
+  **Fix:** Use `shipmobile build` instead of `shipmobile update` for this release.
+</Accordion>
+
+## Doctor / Audit Issues
+
+<Accordion title="Doctor finds issues that --fix can't resolve">
+  Some issues require manual intervention:
+  - **Missing app icon** — Create a 1024×1024 PNG and set the path in `app.json`
+  - **Invalid bundle ID** — Must be reverse domain notation (e.g., `com.company.app`)
+  - **TypeScript errors** — Fix actual type errors in your code
+  - **Incompatible packages** — Replace packages like `react-native-navigation` with Expo-compatible alternatives
+</Accordion>
+
+<Accordion title="Audit score too low">
+  Focus on categories in order of impact:
+  1. **Security** — Fix criticals first (`hardcoded-secrets`, `exposed-env`)
+  2. **Compliance** — Remove `console.log` (auto-fixable), fix permissions
+  3. **Memory** — Add cleanup to `useEffect`, use `FlatList`
+  4. **Performance** — Remove heavy deps, compress images
+  5. **UX** — Add accessibility labels, safe areas
+
+  See the [Audit Rules Guide](/guides/audit-rules) for details on each rule.
+</Accordion>
+
+## General
+
+<Accordion title="shipmobile reset — starting over">
+  If things are really broken, reset everything:
+  ```bash
+  shipmobile reset --force
+  ```
+  Then re-run `shipmobile login` and `shipmobile init`.
+</Accordion>
+
+<Accordion title="Getting help">
+  - Check [GitHub Issues](https://github.com/ACRLABSDEV/shipmobile/issues)
+  - Run `shipmobile doctor` for a comprehensive health check
+  - Use `shipmobile login --status` to verify account connections
+</Accordion>

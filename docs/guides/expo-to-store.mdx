@@ -1,0 +1,139 @@
+---
+title: "Expo to Store"
+description: "Migration guide: I have an Expo app, how do I get it on the App Store and Play Store?"
+---
+
+# Expo to Store
+
+You have an Expo app that runs in Expo Go. Now you want it on the real App Store and Play Store. Here's exactly what to do.
+
+## Before You Start
+
+<Accordion title="Checklist">
+  - [ ] Your app runs in Expo Go or development build without crashes
+  - [ ] You have an Apple Developer account ($99/year)
+  - [ ] You have a Google Play Developer account ($25 one-time)
+  - [ ] You have an Expo account (free at expo.dev)
+  - [ ] You have a 1024×1024 PNG app icon
+  - [ ] Node.js 18+ installed
+</Accordion>
+
+## Step 1: Prepare Your `app.json`
+
+Your `app.json` needs these fields set for store submission:
+
+```json
+{
+  "expo": {
+    "name": "Your App Name",
+    "slug": "your-app-slug",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "bundleIdentifier": "com.yourcompany.yourapp",
+      "supportsTablet": true,
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "com.yourcompany.yourapp",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "versionCode": 1
+    }
+  }
+}
+```
+
+<Warning>
+  Bundle identifiers (`ios.bundleIdentifier` and `android.package`) **cannot be changed** after your first submission. Choose carefully — use reverse domain notation like `com.yourcompany.yourapp`.
+</Warning>
+
+## Step 2: Install and Initialize ShipMobile
+
+```bash
+npm install -g shipmobile
+cd your-expo-app
+shipmobile init
+```
+
+ShipMobile detects your Expo project, creates `eas.json` with build profiles, and sets up the config directory.
+
+## Step 3: Connect Accounts
+
+```bash
+shipmobile login
+```
+
+Follow the interactive wizard, or use flags for each provider individually. See [First Deploy](/guides/first-deploy) for detailed account setup instructions.
+
+## Step 4: Health Check
+
+```bash
+shipmobile doctor --fix
+```
+
+Common issues for Expo apps going to production:
+- Missing `eas.json` → auto-created by `--fix`
+- Missing bundle identifier → set in `app.json`
+- Missing app icon → add a 1024×1024 PNG
+
+## Step 5: Audit
+
+```bash
+shipmobile audit
+```
+
+Common findings in Expo apps:
+
+| Finding | Quick Fix |
+|---------|-----------|
+| `console.log` statements | `shipmobile audit --fix` removes them |
+| Missing `SafeAreaView` | Wrap screens with `react-native-safe-area-context` |
+| Hermes not enabled | Set `"jsEngine": "hermes"` in `app.json` |
+| Large images | Compress with TinyPNG or convert to WebP |
+| Missing accessibility labels | Add `accessibilityLabel` to interactive elements |
+
+## Step 6: Assets
+
+```bash
+shipmobile assets --icon ./assets/icon.png --splash ./assets/splash.png
+```
+
+This validates and generates all required sizes.
+
+## Step 7: Build & Ship
+
+```bash
+shipmobile prepare         # Generate store metadata
+shipmobile build --wait    # Build for both platforms
+shipmobile preview         # Get TestFlight/APK links
+shipmobile submit          # Submit to stores
+```
+
+## Expo-Specific Tips
+
+<Tabs>
+  <Tab title="Managed Workflow">
+    - No `ios/` or `android/` directories needed
+    - EAS Build handles native compilation in the cloud
+    - Config plugins extend native functionality without ejecting
+    - Most straightforward path to the stores
+  </Tab>
+  <Tab title="Development Builds">
+    - If you use `expo-dev-client`, your development build is separate from your production build
+    - Make sure to build with `--profile production` for store submission
+    - Development builds have the dev menu — production builds don't
+  </Tab>
+</Tabs>
+
+<Tip>
+  After your initial store submission, use `shipmobile update` for JS-only changes. It's instant — no app review required. See the [OTA Updates Guide](/guides/ota-updates).
+</Tip>

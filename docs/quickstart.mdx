@@ -56,6 +56,19 @@ description: "Go from zero to App Store in 7 commands."
   </Step>
 </Steps>
 
+## After Your First Deploy
+
+Once your app is live, use OTA updates for JS-only changes:
+
+```bash
+shipmobile update --message "Fix login bug"   # Push instantly
+shipmobile rollback                            # Revert if needed
+```
+
+<Tip>
+  OTA updates skip app store review entirely. Only use `shipmobile build` when you change native code. See the [OTA Updates Guide](/guides/ota-updates) for details.
+</Tip>
+
 ## Agent Workflow
 
 If you're an AI agent using MCP, the flow looks like this:
@@ -72,3 +85,22 @@ shipmobile_submit()   → ship to stores
 ```
 
 Zero human steps between "I have an idea" and "it's on TestFlight."
+
+See the [Agent Workflow Guide](/guides/agent-workflow) for the complete MCP integration guide.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="First Deploy" icon="book" href="/guides/first-deploy">
+    Detailed walkthrough with every step
+  </Card>
+  <Card title="Expo to Store" icon="mobile" href="/guides/expo-to-store">
+    Got an Expo app? Here's how to ship it
+  </Card>
+  <Card title="Audit Rules" icon="magnifying-glass" href="/guides/audit-rules">
+    Deep dive into all 25 rules
+  </Card>
+  <Card title="CI/CD" icon="gear" href="/advanced/ci-cd">
+    Automate deployments in your pipeline
+  </Card>
+</CardGroup>

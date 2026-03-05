@@ -1,0 +1,341 @@
+---
+title: "Audit Rules"
+description: "Deep dive into all 25 audit rules — what they check, why they matter, and how to fix them."
+---
+
+# Audit Rules Reference
+
+ShipMobile's audit engine runs 25 static analysis rules across 5 categories, producing a 0–100 score. Each rule uses Babel AST parsing to analyze your actual source code.
+
+## Scoring Formula
+
+```
+Score = 100 - (criticals × 10) - (warnings × 3) - (infos × 1)
+Minimum: 0
+```
+
+**Target scores:**
+- **90+** — Ship-ready
+- **80–89** — Good, minor improvements possible
+- **60–79** — Needs work before shipping
+- **Below 60** — Significant issues to address
+
+## Performance Rules
+
+These rules catch patterns that make your app slow or bloated.
+
+### `bundle-size`
+**Severity:** Warning
+
+Checks overall dependency weight. Large bundles increase download time and memory usage.
+
+**Fix:** Remove unused dependencies. Use `npx depcheck` to find them. Consider lighter alternatives (e.g., `date-fns` instead of `moment`).
+
+### `heavy-deps`
+**Severity:** Warning
+
+Flags known heavy dependencies: `moment`, `lodash` (full), `native-base`, `aws-sdk` (v2).
+
+**Fix:** Replace with lighter alternatives:
+| Heavy | Light Alternative |
+|-------|-------------------|
+| `moment` | `date-fns` or `dayjs` |
+| `lodash` | `lodash-es` or individual imports |
+| `aws-sdk` | `@aws-sdk/client-*` (v3) |
+
+### `unused-imports`
+**Severity:** Info
+
+Detects `import` statements where the imported binding is never referenced in the file.
+
+**Fix:** Run `shipmobile audit --fix` — this rule has auto-fix support. Or configure your editor's "organize imports" feature.
+
+### `large-images`
+**Severity:** Warning
+
+Finds image assets over 500KB in your project. Large images waste memory and slow rendering.
+
+**Fix:** Compress images with tools like [TinyPNG](https://tinypng.com) or use WebP format. For photos, target under 200KB.
+
+### `hermes-check`
+**Severity:** Warning
+
+Verifies [Hermes engine](https://hermesengine.dev/) is enabled. Hermes dramatically improves startup time and memory usage.
+
+**Fix:** In `app.json`:
+```json
+{
+  "expo": {
+    "jsEngine": "hermes"
+  }
+}
+```
+
+---
+
+## Memory Rules
+
+These rules catch patterns that cause memory leaks — the #1 cause of app crashes on mobile.
+
+### `useeffect-cleanup`
+**Severity:** Warning
+
+Detects `useEffect` hooks with subscriptions, timers, or listeners that don't return a cleanup function.
+
+**Fix:**
+```jsx
+// ❌ Bad — no cleanup
+useEffect(() => {
+  const sub = eventEmitter.addListener('event', handler);
+}, []);
+
+// ✅ Good — cleanup on unmount
+useEffect(() => {
+  const sub = eventEmitter.addListener('event', handler);
+  return () => sub.remove();
+}, []);
+```
+
+### `uncleared-timers`
+**Severity:** Warning
+
+Finds `setTimeout` or `setInterval` calls without corresponding `clearTimeout` / `clearInterval` in cleanup.
+
+**Fix:**
+```jsx
+useEffect(() => {
+  const timer = setInterval(poll, 5000);
+  return () => clearInterval(timer);
+}, []);
+```
+
+### `event-listener-leak`
+**Severity:** Warning
+
+Detects `addEventListener` calls without matching `removeEventListener`.
+
+**Fix:** Always remove listeners in cleanup functions or component unmount.
+
+### `flatlist-usage`
+**Severity:** Warning
+
+Finds `ScrollView` or `.map()` rendering large lists (10+ items) instead of using `FlatList` or `SectionList`.
+
+**Fix:** Replace with `FlatList` for virtualized rendering:
+```jsx
+// ❌ Renders all items at once
+<ScrollView>
+  {items.map(item => <ItemCard key={item.id} {...item} />)}
+</ScrollView>
+
+// ✅ Only renders visible items
+<FlatList
+  data={items}
+  renderItem={({ item }) => <ItemCard {...item} />}
+  keyExtractor={item => item.id}
+/>
+```
+
+### `native-driver`
+**Severity:** Info
+
+Checks that `Animated` API calls use `useNativeDriver: true` where possible. Native driver offloads animation to the UI thread for 60fps.
+
+**Fix:**
+```jsx
+Animated.timing(value, {
+  toValue: 1,
+  duration: 300,
+  useNativeDriver: true, // Add this
+}).start();
+```
+
+---
+
+## UX Rules
+
+These rules ensure your app meets mobile UX standards and accessibility guidelines.
+
+### `touch-target-size`
+**Severity:** Warning
+
+Flags touchable elements (`TouchableOpacity`, `Pressable`, `Button`) with dimensions below the 44×44pt minimum recommended by Apple HIG and Material Design.
+
+**Fix:** Set minimum dimensions:
+```jsx
+<Pressable style={{ minWidth: 44, minHeight: 44 }}>
+```
+
+### `font-size-minimum`
+**Severity:** Info
+
+Flags font sizes below 12sp/pt. Text below this threshold is unreadable for many users.
+
+**Fix:** Use at least 12pt for body text, 14pt for primary content.
+
+### `safe-area`
+**Severity:** Warning
+
+Checks that screens use `SafeAreaView` or `useSafeAreaInsets` to avoid content being obscured by notches, status bars, and home indicators.
+
+**Fix:**
+```jsx
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+export default function Screen() {
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      {/* Your content */}
+    </SafeAreaView>
+  );
+}
+```
+
+### `keyboard-avoidance`
+**Severity:** Warning
+
+Detects forms with `TextInput` components that don't use `KeyboardAvoidingView`.
+
+**Fix:** Wrap forms in `KeyboardAvoidingView`:
+```jsx
+<KeyboardAvoidingView
+  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+>
+  <TextInput />
+</KeyboardAvoidingView>
+```
+
+### `dark-mode`
+**Severity:** Info
+
+Checks for dark mode support — usage of `useColorScheme()` or a theme provider.
+
+**Fix:** Implement dark mode using `useColorScheme()` from React Native or a theming library.
+
+### `accessibility-labels`
+**Severity:** Warning
+
+Checks that interactive elements (`Pressable`, `TouchableOpacity`, `Button`, images) have `accessibilityLabel` props.
+
+**Fix:**
+```jsx
+<Pressable
+  accessibilityLabel="Submit form"
+  accessibilityRole="button"
+  onPress={handleSubmit}
+>
+```
+
+---
+
+## Compliance Rules
+
+These rules prevent store rejections and policy violations.
+
+### `no-console-log`
+**Severity:** Info | **Auto-fixable:** ✅
+
+Finds `console.log`, `console.warn`, and `console.error` left in production code.
+
+**Fix:** Run `shipmobile audit --fix` to auto-remove, or use a build transform.
+
+### `hardcoded-secrets`
+**Severity:** Critical
+
+Detects patterns matching API keys, tokens, and secrets hardcoded in source files (e.g., `sk_live_...`, `AKIA...`, long hex strings assigned to variables named `key`, `secret`, `token`).
+
+**Fix:** Move secrets to environment variables. Use `expo-constants` or `react-native-config`.
+
+### `unused-permissions`
+**Severity:** Warning
+
+Finds permissions declared in `app.json` that aren't used by any code or native module in the project.
+
+**Fix:** Remove unused permissions from your config. Each unnecessary permission is a potential store rejection reason.
+
+### `missing-permissions`
+**Severity:** Warning
+
+Detects usage of APIs (camera, location, contacts) without corresponding permission declarations.
+
+**Fix:** Add required permissions to `app.json`:
+```json
+{
+  "expo": {
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need camera access to scan QR codes"
+      }
+    }
+  }
+}
+```
+
+### `privacy-manifest`
+**Severity:** Warning
+
+Checks for iOS privacy manifest (`PrivacyInfo.xcprivacy`) — required by Apple since Spring 2024 for apps using certain APIs.
+
+**Fix:** Add a privacy manifest via your `app.json` plugins or create one manually.
+
+### `version-production`
+**Severity:** Warning
+
+Checks that version numbers are production-appropriate (not `0.0.1`, not `1.0.0-dev`).
+
+**Fix:** Set a proper version in `app.json` before submission.
+
+---
+
+## Security Rules
+
+These rules catch security issues that could expose user data.
+
+### `hardcoded-urls`
+**Severity:** Warning
+
+Finds hardcoded API URLs (especially `http://` and `localhost`) that should use environment variables.
+
+**Fix:** Use `process.env.API_URL` or `expo-constants` to inject URLs per environment.
+
+### `debug-flags`
+**Severity:** Warning
+
+Detects debug flags left enabled: `__DEV__` checks in production paths, `debugMode: true`, `enableDevTools: true`.
+
+**Fix:** Ensure debug flags are properly gated behind `__DEV__` or removed.
+
+### `exposed-env`
+**Severity:** Critical
+
+Checks if `.env` files or their contents are bundled into the app. Also catches importing `.env` files directly.
+
+**Fix:** Add `.env` to `.gitignore` and use proper environment variable injection.
+
+---
+
+## Running Specific Categories
+
+```bash
+# Run only security rules
+shipmobile audit --category security
+
+# Run only performance rules
+shipmobile audit --category performance
+```
+
+## Auto-Fix
+
+```bash
+shipmobile audit --fix
+```
+
+Rules with auto-fix support will remediate issues automatically. The audit re-runs after fixes to give you an updated score.
+
+## Diff Mode
+
+```bash
+shipmobile audit --diff
+```
+
+Compares against the last saved audit in `.shipmobile/audit-history/latest.json` and shows what improved or regressed.

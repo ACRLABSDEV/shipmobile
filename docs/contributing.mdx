@@ -1,0 +1,125 @@
+---
+title: "Contributing"
+description: "How to contribute to ShipMobile — dev setup, architecture, testing, and PR process."
+---
+
+# Contributing
+
+ShipMobile is open source. Here's how to contribute.
+
+## Dev Setup
+
+<Steps>
+  <Step title="Clone and install">
+    ```bash
+    git clone https://github.com/ACRLABSDEV/shipmobile.git
+    cd shipmobile
+    pnpm install
+    ```
+  </Step>
+  <Step title="Build">
+    ```bash
+    pnpm build
+    ```
+  </Step>
+  <Step title="Run locally">
+    ```bash
+    # Run CLI directly
+    pnpm dev -- doctor
+
+    # Or link globally
+    pnpm link --global
+    shipmobile doctor
+    ```
+  </Step>
+  <Step title="Run tests">
+    ```bash
+    pnpm test
+    ```
+  </Step>
+</Steps>
+
+## Architecture Overview
+
+```
+src/
+├── cli/                  # Commander.js CLI definitions
+│   ├── index.ts          # Entry point, registers all commands
+│   └── commands/         # Individual command handlers
+├── core/                 # Business logic for each command
+│   ├── init.ts
+│   ├── login.ts
+│   ├── doctor.ts
+│   ├── audit/            # Audit engine
+│   ├── build.ts
+│   ├── update.ts
+│   ├── rollback.ts
+│   └── ...
+├── services/             # External service abstractions
+│   ├── eas.ts            # EAS Build
+│   ├── eas-update.ts     # EAS Update (OTA)
+│   ├── appstore.ts       # App Store Connect API
+│   └── playstore.ts      # Google Play Developer API
+├── analyzers/            # Audit rules and AST analysis
+│   ├── rules/            # 25 rules organized by category
+│   ├── discovery.ts      # Project file scanning
+│   └── types.ts          # Shared audit types
+├── mcp/                  # MCP server implementation
+│   └── server.ts         # Tool definitions and handlers
+└── utils/
+    ├── result.ts          # Result<T> type system
+    └── config.ts          # Config file utilities
+```
+
+### Key Design Decisions
+
+- **Result\<T\> everywhere** — No thrown exceptions in core modules. Every function returns `Result<T>`.
+- **Service abstraction** — All external calls go through service interfaces. Set mock implementations for testing with `setXService()`.
+- **AST-based analysis** — Audit rules use Babel to parse and traverse code. No regex hacks.
+- **CLI ↔ Core separation** — CLI handlers are thin wrappers around core modules. Core modules are framework-agnostic and testable.
+
+## Adding a New Command
+
+1. Create core logic in `src/core/mycommand.ts`:
+   ```typescript
+   import { ok, err, type Result } from '../utils/result';
+
+   export interface MyCommandResult { /* ... */ }
+
+   export async function execute(options: {}): Promise<Result<MyCommandResult>> {
+     // Implementation
+     return ok({ /* result */ });
+   }
+   ```
+
+2. Register the CLI command in `src/cli/commands/`
+3. Add an MCP tool in `src/mcp/server.ts`
+4. Add docs in `docs/commands/mycommand.mdx`
+5. Add to navigation in `docs/mint.json`
+
+## Adding an Audit Rule
+
+See the [Audit Engine docs](/api/audit-engine) for the full guide. In short:
+
+1. Create rule file in `src/analyzers/rules/<category>/`
+2. Implement the `AuditRule` interface
+3. Register in `src/analyzers/rules/index.ts`
+4. Add to docs in the [Audit Rules Guide](/guides/audit-rules)
+
+## Testing
+
+- **Unit tests** for core modules — mock services with `setXService()`
+- **Integration tests** for CLI commands — use test fixture projects
+- Run: `pnpm test`
+
+## PR Process
+
+1. Fork the repo and create a feature branch
+2. Make your changes with tests
+3. Run `pnpm test` and `pnpm build` — both must pass
+4. Open a PR with a clear description of what and why
+5. Address review feedback
+
+<Note>
+  Use `pnpm` for all package management. Not npm. Not yarn.
+</Note>

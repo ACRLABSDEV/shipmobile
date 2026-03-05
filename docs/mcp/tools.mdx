@@ -1,6 +1,6 @@
 ---
 title: "Tools Reference"
-description: "All 11 MCP tools available to AI agents."
+description: "All 13 MCP tools available to AI agents."
 ---
 
 # MCP Tools Reference
@@ -122,6 +122,35 @@ Submit to App Store Connect and Google Play.
 | `platform` | `"ios" \| "android"` | No | Target platform |
 | `track` | `"internal" \| "alpha" \| "beta" \| "production"` | No | Google Play track |
 | `skip_preflight` | `boolean` | No | Skip pre-flight checks |
+
+## shipmobile_update
+
+Publish OTA updates via EAS Update.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `channel` | `"production" \| "staging" \| "preview" \| string` | No | Update channel (default: production) |
+| `message` | `string` | No | Update message |
+| `platform` | `"ios" \| "android" \| "all"` | No | Target platform (default: all) |
+| `branch` | `string` | No | EAS Update branch name |
+| `non_interactive` | `boolean` | No | Skip prompts (for agents/CI) |
+
+Returns: `published`, `nativeCheck` (warnings about native changes), `update` details, `channel`, `platform`.
+
+## shipmobile_rollback
+
+Revert OTA updates on a channel.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | `string` | No | Project path |
+| `channel` | `"production" \| "staging" \| "preview" \| string` | No | Target channel (default: production) |
+| `group` | `string` | No | Specific update group ID to roll back to |
+| `platform` | `"ios" \| "android" \| "all"` | No | Target platform (default: all) |
+| `non_interactive` | `boolean` | No | Skip prompts |
+
+Returns: `rolledBack`, `previousGroup`, `update` details, `channel`, `availableGroups`.
 
 ## shipmobile_reset
 
