@@ -1,6 +1,6 @@
 {
   "name": "shipmobile",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ship React Native/Expo apps to App Store & Play Store — CLI + MCP server",
   "type": "module",
   "bin": {
@@ -74,6 +74,7 @@
     "@types/sharp": "^0.32.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "@vitest/coverage-v8": "^1.6.1",
     "eslint": "^8.57.0",
     "prettier": "^3.3.0",
     "tsup": "^8.1.0",
