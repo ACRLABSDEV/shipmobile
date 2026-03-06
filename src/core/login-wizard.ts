@@ -9,7 +9,7 @@ import { createInterface } from 'node:readline/promises';
 import { execSync, spawn } from 'node:child_process';
 import { stdin as input, stdout as output } from 'node:process';
 import { colors, figures } from '../cli/theme.js';
-import { readCredentials } from '../utils/config.js';
+import { readCredentials, writeCredentials, type CredentialData } from '../utils/config.js';
 import * as login from './login.js';
 
 // ─── Status Detection ────────────────────────────────────────────────
@@ -30,7 +30,8 @@ function runQuiet(cmd: string): string | null {
 
 async function detectConnections(cwd?: string): Promise<ConnectionStatus> {
   const credResult = await readCredentials(cwd);
-  const creds = credResult.ok ? credResult.data : {};
+  const creds: CredentialData = credResult.ok ? { ...credResult.data } : {};
+  let dirty = false;
 
   let expo = { connected: false, label: 'Not connected' };
   if (creds.expo?.validated && creds.expo.username) {
@@ -39,6 +40,14 @@ async function detectConnections(cwd?: string): Promise<ConnectionStatus> {
     const whoami = runQuiet('eas whoami 2>/dev/null');
     if (whoami && !whoami.includes('not logged in') && whoami.length > 0) {
       expo = { connected: true, label: `@${whoami} (eas cli)` };
+      // Persist so doctor can see it
+      creds.expo = {
+        token: '__eas_cli__',
+        username: whoami,
+        validated: true,
+        validatedAt: new Date().toISOString(),
+      };
+      dirty = true;
     }
   }
 
@@ -47,6 +56,16 @@ async function detectConnections(cwd?: string): Promise<ConnectionStatus> {
     apple = { connected: true, label: creds.apple.teamName || 'via Expo/EAS' };
   } else if (expo.connected) {
     apple = { connected: true, label: 'via Expo/EAS (auto during build)' };
+    // Persist Apple as connected via EAS
+    creds.apple = {
+      apiKeyId: '__eas_managed__',
+      issuerId: '__eas_managed__',
+      keyPath: '__eas_managed__',
+      teamName: 'via Expo/EAS',
+      validated: true,
+      validatedAt: new Date().toISOString(),
+    };
+    dirty = true;
   }
 
   let google = { connected: false, label: 'Not connected' };
@@ -57,7 +76,20 @@ async function detectConnections(cwd?: string): Promise<ConnectionStatus> {
     if (token && token.length > 20) {
       const project = runQuiet('gcloud config get-value project 2>/dev/null');
       google = { connected: true, label: project || 'authenticated' };
+      // Persist so doctor can see it
+      creds.google = {
+        serviceAccountPath: '__gcloud_adc__',
+        projectId: project || 'gcloud',
+        validated: true,
+        validatedAt: new Date().toISOString(),
+      };
+      dirty = true;
     }
+  }
+
+  // Save detected credentials
+  if (dirty) {
+    await writeCredentials(creds, cwd);
   }
 
   return { expo, apple, google };
@@ -111,13 +143,13 @@ async function setupExpo(rl: ReturnType<typeof createInterface>, cwd?: string): 
   console.log();
 
   if (isEasInstalled()) {
-    console.log(`  ${colors.dim('How would you like to connect?')}`);
+    console.log(`  ${colors.text('How would you like to connect?')}`);
     console.log();
     const choice = await ask(rl, '', ['EAS CLI login (browser)', 'Access token (CI/headless)']);
 
     if (choice === '1') {
       console.log();
-      console.log(`  ${colors.dim('Opening EAS login...')}`);
+      console.log(`  ${colors.text('Opening EAS login...')}`);
       console.log();
       const success = await spawnInteractive('eas', ['login']);
       if (success) {
@@ -146,7 +178,7 @@ async function setupExpo(rl: ReturnType<typeof createInterface>, cwd?: string): 
       }
       return false;
     } else {
-      console.log(`  ${colors.dim('Skipped.')}`);
+      console.log(`  ${colors.text('Skipped.')}`);
       return false;
     }
   } else {
@@ -166,7 +198,7 @@ async function setupExpo(rl: ReturnType<typeof createInterface>, cwd?: string): 
         return false;
       }
     }
-    console.log(`  ${colors.dim('Skipped.')}`);
+    console.log(`  ${colors.text('Skipped.')}`);
     return false;
   }
 }
@@ -178,11 +210,11 @@ async function setupApple(rl: ReturnType<typeof createInterface>, expoConnected:
   console.log();
 
   if (expoConnected) {
-    console.log(`  ${colors.dim('Apple authentication is handled automatically by EAS')}`);
-    console.log(`  ${colors.dim('during build and submit. Since Expo is connected,')}`);
-    console.log(`  ${colors.dim("you're good to go!")}`);
+    console.log(`  ${colors.text('Apple authentication is handled automatically by EAS')}`);
+    console.log(`  ${colors.text('during build and submit. Since Expo is connected,')}`);
+    console.log(`  ${colors.text("you're good to go!")}`);
     console.log();
-    console.log(`  ${colors.dim('Want to set up direct App Store Connect API access instead?')}`);
+    console.log(`  ${colors.text('Want to set up direct App Store Connect API access instead?')}`);
     console.log();
     const choice = await ask(rl, '', ['Use EAS (recommended)', 'Set up API key manually']);
 
@@ -193,7 +225,7 @@ async function setupApple(rl: ReturnType<typeof createInterface>, expoConnected:
     console.log(`  ${colors.success(figures.tick)} Apple connected via Expo/EAS`);
     return true;
   } else {
-    console.log(`  ${colors.dim('For App Store Connect API access, you need an API key.')}`);
+    console.log(`  ${colors.text('For App Store Connect API access, you need an API key.')}`);
     console.log(`  ${colors.dim('Generate one at:')} ${colors.suggestion('https://appstoreconnect.apple.com/access/api')}`);
     console.log();
     return await setupAppleManual(rl, cwd);
@@ -203,13 +235,13 @@ async function setupApple(rl: ReturnType<typeof createInterface>, expoConnected:
 async function setupAppleManual(rl: ReturnType<typeof createInterface>, cwd?: string): Promise<boolean> {
   console.log();
   const keyId = await rl.question(`  ${colors.text('API Key ID:')} `);
-  if (!keyId.trim()) { console.log(`  ${colors.dim('Skipped.')}`); return false; }
+  if (!keyId.trim()) { console.log(`  ${colors.text('Skipped.')}`); return false; }
 
   const issuerId = await rl.question(`  ${colors.text('Issuer ID:')} `);
-  if (!issuerId.trim()) { console.log(`  ${colors.dim('Skipped.')}`); return false; }
+  if (!issuerId.trim()) { console.log(`  ${colors.text('Skipped.')}`); return false; }
 
   const keyPath = await rl.question(`  ${colors.text('Path to .p8 key file:')} `);
-  if (!keyPath.trim()) { console.log(`  ${colors.dim('Skipped.')}`); return false; }
+  if (!keyPath.trim()) { console.log(`  ${colors.text('Skipped.')}`); return false; }
 
   const result = await login.loginApple({
     keyId: keyId.trim(),
@@ -236,13 +268,13 @@ async function setupGoogle(rl: ReturnType<typeof createInterface>, cwd?: string)
   const hasGcloud = isGcloudInstalled();
 
   if (hasGcloud) {
-    console.log(`  ${colors.dim('How would you like to connect?')}`);
+    console.log(`  ${colors.text('How would you like to connect?')}`);
     console.log();
     const choice = await ask(rl, '', ['Google Cloud CLI (browser)', 'Service account JSON']);
 
     if (choice === '1') {
       console.log();
-      console.log(`  ${colors.dim('Opening Google OAuth...')}`);
+      console.log(`  ${colors.text('Opening Google OAuth...')}`);
       console.log();
       const success = await spawnInteractive('gcloud', ['auth', 'application-default', 'login']);
       if (success) {
@@ -258,11 +290,11 @@ async function setupGoogle(rl: ReturnType<typeof createInterface>, cwd?: string)
     } else if (choice === '2') {
       return await setupGoogleServiceAccount(rl, cwd);
     } else {
-      console.log(`  ${colors.dim('Skipped.')}`);
+      console.log(`  ${colors.text('Skipped.')}`);
       return false;
     }
   } else {
-    console.log(`  ${colors.dim('gcloud CLI not found. Using service account JSON.')}`);
+    console.log(`  ${colors.text('gcloud CLI not found. Using service account JSON.')}`);
     console.log();
     return await setupGoogleServiceAccount(rl, cwd);
   }
@@ -270,11 +302,11 @@ async function setupGoogle(rl: ReturnType<typeof createInterface>, cwd?: string)
 
 async function setupGoogleServiceAccount(rl: ReturnType<typeof createInterface>, cwd?: string): Promise<boolean> {
   console.log();
-  console.log(`  ${colors.dim('Create a service account at:')}`);
+  console.log(`  ${colors.text('Create a service account at:')}`);
   console.log(`  ${colors.suggestion('https://console.cloud.google.com/iam-admin/serviceaccounts')}`);
   console.log();
   const saPath = await rl.question(`  ${colors.text('Path to service account JSON (or press Enter to skip):')} `);
-  if (!saPath.trim()) { console.log(`  ${colors.dim('Skipped.')}`); return false; }
+  if (!saPath.trim()) { console.log(`  ${colors.text('Skipped.')}`); return false; }
 
   const result = await login.loginGoogle({ serviceAccountPath: saPath.trim() }, cwd);
   if (result.ok) {
@@ -291,7 +323,7 @@ async function setupGoogleServiceAccount(rl: ReturnType<typeof createInterface>,
 
 export async function runLoginWizard(cwd?: string): Promise<void> {
   console.log();
-  console.log(`  ${colors.dim('Checking connections...')}`);
+  console.log(`  ${colors.text('Checking connections...')}`);
   console.log();
 
   const status = await detectConnections(cwd);
@@ -313,7 +345,7 @@ export async function runLoginWizard(cwd?: string): Promise<void> {
     // Offer to reconfigure
     const rl = createInterface({ input, output });
     try {
-      const answer = await rl.question(`  ${colors.dim('Reconfigure a connection? (y/N):')} `);
+      const answer = await rl.question(`  ${colors.text('Reconfigure a connection? (y/N):')} `);
       if (answer.trim().toLowerCase() !== 'y') {
         console.log();
         return;
@@ -337,7 +369,7 @@ export async function runLoginWizard(cwd?: string): Promise<void> {
       console.log();
     }
 
-    console.log(`  ${colors.dim('What would you like to do?')}`);
+    console.log(`  ${colors.text('What would you like to do?')}`);
     console.log();
 
     const menuOptions: { label: string; action: () => Promise<void> }[] = [];

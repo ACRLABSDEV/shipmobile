@@ -44,7 +44,7 @@ export const colors = {
 
   // Text modifiers
   bold: chalk.bold,
-  dim: chalk.dim,
+  dim: chalk.hex('#7a9bb0'),             // brighter secondary text (was chalk.dim)
   italic: chalk.italic,
   inverse: chalk.inverse,
 
