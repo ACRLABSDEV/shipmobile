@@ -300,9 +300,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 If ShipMobile saves you from App Store hell, consider buying the crew a coffee.
 
-[![Tip the Captain](https://img.shields.io/badge/⚓_Tip_the_Captain-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](#)
+[![Sponsor on GitHub](https://img.shields.io/badge/💜_Sponsor-GitHub-ea4aaa?style=for-the-badge)](https://github.com/sponsors/ACRLABSDEV)
+[![Ko-fi](https://img.shields.io/badge/☕_Buy_a_Coffee-Ko--fi-FF5E5B?style=for-the-badge)](https://ko-fi.com/acrlabs)
+[![ETH/Base](https://img.shields.io/badge/⟠_ETH/Base-0xDb7F...1459535-627EEA?style=for-the-badge)](#)
 
-<sub>BTC and other donation options coming soon.</sub>
+<sub>ETH/Base: `0xDb7F7578a92aA5EA35e2e28A6F79Bc8bd1459535`</sub>
 
 ---
 
