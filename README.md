@@ -10,11 +10,13 @@ Your agent can build the app. ShipMobile ships it.
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue.svg)](tsconfig.json)
+[![npm](https://img.shields.io/npm/v/shipmobile.svg)](https://www.npmjs.com/package/shipmobile)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Docs](https://img.shields.io/badge/docs-mintlify-22d3ee.svg)](https://shipmobile.mintlify.app)
 
 ---
 
-> ⚠️ **Work in Progress** — ShipMobile is under active development. Expect breaking changes. We're building in public and shipping fast. Come along for the ride.
+> 📦 **v0.1.0 is live on npm!** — `npm install -g shipmobile` — All 6 phases complete. CLI + MCP server ready. [Read the docs →](https://shipmobile.mintlify.app)
 
 </div>
 
@@ -134,8 +136,11 @@ We're building toward a world where ShipMobile doesn't just execute commands —
 - **Memory across sessions** — remembers your store preferences, past submissions, and common issues
 - **Proactive alerts** — notifies you (or your agent) when certificates expire, new SDK versions drop, or store policies change
 
-### 🔄 OTA Updates (`shipmobile update`) *— coming soon*
-Push over-the-air updates via Expo Updates. Skip app store review for JS/asset changes. Rollback instantly if something goes wrong.
+### 🔄 OTA Updates (`shipmobile update`)
+Push over-the-air updates via EAS Update. Automatically detects whether changes are OTA-safe (JS/assets only) or require a full native build. Channel management (production, staging, preview) built in.
+
+### ⏪ Rollback (`shipmobile rollback`)
+Instantly revert to a previous OTA update. Lists recent update groups, lets you pick a target, and republishes. Because shipping fast means being able to un-ship fast too.
 
 ## Installation
 
@@ -175,7 +180,27 @@ shipmobile preview
 
 # 7. Ship it
 shipmobile submit
+
+# 8. Push an OTA update later
+shipmobile update --message "Bug fix"
+
+# 9. Something wrong? Roll it back
+shipmobile rollback
 ```
+
+## Documentation
+
+Full docs with guides, API reference, and examples: **[shipmobile.mintlify.app](https://shipmobile.mintlify.app)**
+
+- [Quickstart Guide](https://shipmobile.mintlify.app/quickstart)
+- [All Commands](https://shipmobile.mintlify.app/docs/commands/login)
+- [MCP Server Setup](https://shipmobile.mintlify.app/docs/mcp/overview)
+- [Agent Workflow Guide](https://shipmobile.mintlify.app/docs/guides/agent-workflow)
+- [First Deploy Walkthrough](https://shipmobile.mintlify.app/docs/guides/first-deploy)
+- [OTA Update Strategy](https://shipmobile.mintlify.app/docs/guides/ota-updates)
+- [Audit Rules Reference](https://shipmobile.mintlify.app/docs/guides/audit-rules)
+- [CI/CD Setup](https://shipmobile.mintlify.app/docs/advanced/ci-cd)
+- [Contributing](https://shipmobile.mintlify.app/docs/contributing)
 
 ## Agent Workflow
 
@@ -220,13 +245,13 @@ ShipMobile is being built in phases. Here's where we're at:
 | Phase | Status | What |
 |-------|--------|------|
 | **0 — Foundation** | ✅ Done | Repo scaffold, architecture, CLI + MCP entry points |
-| **1 — Auth & Setup** | 🔨 In Progress | `login`, `init`, `doctor` |
-| **2 — Audit Engine** | ⏳ Next | 25+ static analysis rules, scoring, `--fix` |
-| **3 — Assets & Metadata** | ⏳ Planned | Icon processing, metadata generation, privacy policies |
-| **4 — Build Loop** | ⏳ Planned | Build, status, preview with QR codes |
-| **5 — Submit & Launch** | ✅ Complete | Store submission, reset command, docs, npm prep |
-| **6 — OTA Updates** | ⏳ Future | `update`, `rollback`, AI-assisted fixes |
-| **7 — Agentic Intelligence** | 🔮 Vision | LLM memory, proactive alerts, context-aware suggestions |
+| **1 — Auth & Setup** | ✅ Done | `login`, `init`, `doctor` (23 health checks) |
+| **2 — Audit Engine** | ✅ Done | 25 static analysis rules, scoring 0-100, `--fix` auto-remediation |
+| **3 — Assets & Metadata** | ✅ Done | Icon processing, metadata generation, privacy policies |
+| **4 — Build Loop** | ✅ Done | Build, status, preview with real QR codes |
+| **5 — Submit & Launch** | ✅ Done | App Store Connect + Google Play submission, npm published |
+| **6 — OTA Updates** | ✅ Done | `update` with native change detection, `rollback` |
+| **7 — Agentic Intelligence** | 🔮 Next | LLM-powered `fix`, memory across sessions, proactive alerts |
 | **8 — Ecosystem** | 🔮 Vision | Flutter/Swift/Kotlin support, plugin marketplace, CI/CD generation |
 
 ## Tech Stack
