@@ -124,13 +124,31 @@ describe('Audit Engine', () => {
 
     const result = await execute({ projectPath: tmpDir, fix: true });
     expect(result.ok).toBe(true);
+    if (!result.ok) return;
 
     const content = readFileSync(join(tmpDir, 'src', 'test.ts'), 'utf-8');
     expect(content).not.toContain('console.log');
     expect(content).toContain('const x = 1');
 
+    expect(result.data._fixedCount).toBeGreaterThan(0);
+    expect(result.data._fixReport?.length).toBeGreaterThan(0);
+    expect(result.data._fixReport?.some((r) => r.ruleId === 'no-console-log')).toBe(true);
+
     // Cleanup
     rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('should only count currently-implementable auto-fixes', async () => {
+    const result = await execute({ projectPath: FIXTURE_PATH });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const declaredAutoFixable = result.data.findings.filter((f) => f.autoFixable).length;
+    const implementableAutoFixable = result.data._fixableCount ?? 0;
+
+    expect(declaredAutoFixable).toBeGreaterThan(0);
+    expect(implementableAutoFixable).toBeGreaterThanOrEqual(0);
+    expect(implementableAutoFixable).toBeLessThanOrEqual(declaredAutoFixable);
   });
 });
 

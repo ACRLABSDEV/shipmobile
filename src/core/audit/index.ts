@@ -9,6 +9,14 @@ import { buildAuditContext } from '../../analyzers/discovery.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+export interface AuditFixReportEntry {
+  ruleId: string;
+  ruleName: string;
+  fixedCount: number;
+  resolvedCount: number;
+  files: string[];
+}
+
 export interface AuditResult {
   score: number;
   critical: AuditFinding[];
@@ -21,6 +29,10 @@ export interface AuditResult {
     duration: number;
   };
   findings: AuditFinding[];
+  _fixedCount?: number;
+  _fixableCount?: number;
+  _fixReport?: AuditFixReportEntry[];
+  _previous?: AuditResult;
 }
 
 export interface AuditOptions {
@@ -61,21 +73,52 @@ export async function execute(options: AuditOptions = {}): Promise<Result<AuditR
   // Run fix mode
   if (options.fix) {
     let totalFixed = 0;
+    const fixReport: AuditFixReportEntry[] = [];
+
     for (const rule of rules) {
-      if (rule.fix) {
-        const fixedCount = await rule.fix(context);
-        totalFixed += fixedCount;
+      if (!rule.fix) continue;
+
+      const beforeContext = buildAuditContext(projectPath);
+      const beforeFindings = await rule.check(beforeContext);
+      const fixedCount = await rule.fix(beforeContext);
+      totalFixed += fixedCount;
+
+      if (fixedCount > 0 || beforeFindings.length > 0) {
+        const afterContext = buildAuditContext(projectPath);
+        const afterFindings = await rule.check(afterContext);
+
+        const resolved = getResolvedFindings(beforeFindings, afterFindings);
+        const files = Array.from(new Set(resolved.map((f) => f.file).filter(Boolean))) as string[];
+
+        if (fixedCount > 0 || resolved.length > 0) {
+          fixReport.push({
+            ruleId: rule.id,
+            ruleName: rule.name,
+            fixedCount,
+            resolvedCount: resolved.length,
+            files,
+          });
+        }
       }
     }
+
     // Re-run context after fixes
     const newContext = buildAuditContext(projectPath);
     const findings = await runRules(rules, newContext);
     const result = buildResult(findings, newContext.files.length, allRules.length, rules.length, startTime);
-    return ok({ ...result, _fixedCount: totalFixed } as AuditResult & { _fixedCount: number });
+    const fixableCount = getFixableFindingCount(findings, rules);
+
+    return ok({
+      ...result,
+      _fixedCount: totalFixed,
+      _fixableCount: fixableCount,
+      _fixReport: fixReport,
+    });
   }
 
   const findings = await runRules(rules, context);
   const result = buildResult(findings, context.files.length, allRules.length, rules.length, startTime);
+  const fixableCount = getFixableFindingCount(findings, rules);
 
   // Save history for diff
   if (options.diff) {
@@ -95,7 +138,7 @@ export async function execute(options: AuditOptions = {}): Promise<Result<AuditR
     writeFileSync(previousPath, JSON.stringify(result, null, 2));
 
     if (previous) {
-      return ok({ ...result, _previous: previous } as AuditResult & { _previous: AuditResult });
+      return ok({ ...result, _fixableCount: fixableCount, _previous: previous });
     }
   } else {
     // Always save latest
@@ -108,7 +151,7 @@ export async function execute(options: AuditOptions = {}): Promise<Result<AuditR
     }
   }
 
-  return ok(result);
+  return ok({ ...result, _fixableCount: fixableCount });
 }
 
 async function runRules(rules: typeof allRules, context: AuditContext): Promise<AuditFinding[]> {
@@ -122,6 +165,20 @@ async function runRules(rules: typeof allRules, context: AuditContext): Promise<
     }
   }
   return findings;
+}
+
+function getFixableFindingCount(findings: AuditFinding[], rules: typeof allRules): number {
+  const fixableRuleIds = new Set(rules.filter((r) => !!r.fix).map((r) => r.id));
+  return findings.filter((f) => f.autoFixable && fixableRuleIds.has(f.ruleId)).length;
+}
+
+function getResolvedFindings(before: AuditFinding[], after: AuditFinding[]): AuditFinding[] {
+  const afterKeys = new Set(after.map((f) => findingKey(f)));
+  return before.filter((f) => !afterKeys.has(findingKey(f)));
+}
+
+function findingKey(f: AuditFinding): string {
+  return `${f.ruleId}|${f.file || ''}|${f.line || ''}|${f.message}`;
 }
 
 function buildResult(

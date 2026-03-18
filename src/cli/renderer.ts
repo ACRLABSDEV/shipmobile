@@ -207,7 +207,7 @@ export function renderDoctorResult(result: Result<DoctorResult>): void {
 
 // ─── Audit ───────────────────────────────────────────────────────────
 
-export function renderAuditResult(result: Result<AuditResult & { _fixedCount?: number; _previous?: AuditResult }>): void {
+export function renderAuditResult(result: Result<AuditResult>): void {
   if (!result.ok) {
     console.log(`  ${status('fail', result.error.message)}`);
     if (result.error.suggestion) console.log(`  ${hint(result.error.suggestion)}`);
@@ -272,10 +272,23 @@ export function renderAuditResult(result: Result<AuditResult & { _fixedCount?: n
   // Auto-fix report
   if (data._fixedCount && data._fixedCount > 0) {
     console.log(`  ${status('pass', `Auto-fixed ${data._fixedCount} issues`)}`);
+
+    if (data._fixReport && data._fixReport.length > 0) {
+      console.log(`  ${colors.dim('Fixed')}`);
+      for (const entry of data._fixReport) {
+        const label = entry.resolvedCount > 0 ? `${entry.ruleId} (${entry.resolvedCount})` : `${entry.ruleId} (${entry.fixedCount})`;
+        console.log(`    ${figures.pointerSmall} ${label}`);
+        if (entry.files.length > 0) {
+          const filesPreview = entry.files.slice(0, 3).join(', ');
+          const extra = entry.files.length > 3 ? ` +${entry.files.length - 3}` : '';
+          console.log(`      ${colors.dim(filesPreview)}${colors.dim(extra)}`);
+        }
+      }
+    }
     console.log();
   }
 
-  const fixable = findings.filter((f: AuditFinding) => f.autoFixable).length;
+  const fixable = data._fixableCount ?? findings.filter((f: AuditFinding) => f.autoFixable).length;
   if (fixable > 0) {
     console.log(`  ${hint(`Run ${cmd('shipmobile audit --fix')} to auto-fix ${fixable} issues`)}`);
     console.log();
