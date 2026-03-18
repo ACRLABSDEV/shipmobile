@@ -157,8 +157,11 @@ export class RealEASService implements EASService {
       '--platform', request.platform,
       '--profile', request.profile,
       '--json',
-      '--non-interactive',
     ];
+
+    if (request.nonInteractive !== false) {
+      args.push('--non-interactive');
+    }
 
     try {
       const { stdout } = await execFileAsync('eas', args, {

@@ -4,6 +4,7 @@
 
 import { join } from 'node:path';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import { ok, err, type Result } from '../utils/result.js';
 import { execute as runDoctor } from './doctor.js';
 import {
@@ -42,6 +43,26 @@ export interface BuildInfo {
 }
 
 const BUILD_CACHE_DIR = '.shipmobile/build-cache';
+
+function needsInteractiveIosCredentialsSetup(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes('failed to set up credentials') &&
+    m.includes('non-interactive') &&
+    m.includes('couldn\'t find any credentials suitable for internal distribution')
+  );
+}
+
+async function runInteractiveIosCredentialBootstrap(projectDir: string, profile: BuildProfile): Promise<boolean> {
+  return await new Promise((resolve) => {
+    const child = spawn('eas', ['build', '-p', 'ios', '--profile', profile], {
+      cwd: projectDir,
+      stdio: 'inherit',
+    });
+    child.on('close', (code) => resolve(code === 0));
+    child.on('error', () => resolve(false));
+  });
+}
 
 async function saveBuildMetadata(projectDir: string, buildInfo: EASBuildInfo): Promise<void> {
   const cacheDir = join(projectDir, BUILD_CACHE_DIR);
@@ -150,6 +171,51 @@ export async function execute(input: BuildInput = {}): Promise<Result<BuildResul
           'Run `shipmobile login --expo` to authenticate with EAS.',
         );
       }
+
+      // One-time iOS credential bootstrap fallback (interactive)
+      if (
+        platform === 'ios' &&
+        needsInteractiveIosCredentialsSetup(error.message) &&
+        process.stdin.isTTY &&
+        process.stdout.isTTY
+      ) {
+        const { confirm } = await import('@inquirer/prompts');
+        const shouldBootstrap = await confirm({
+          message: 'iOS credentials need one-time interactive setup. Run EAS credential bootstrap now?',
+          default: true,
+        });
+
+        if (shouldBootstrap) {
+          const bootstrapped = await runInteractiveIosCredentialBootstrap(projectDir, profile);
+          if (bootstrapped) {
+            try {
+              const retryBuild = await eas.triggerBuild({
+                platform,
+                profile,
+                projectDir,
+                nonInteractive: true,
+              });
+              await saveBuildMetadata(projectDir, retryBuild);
+              const retryEta = estimateTimeRemaining(retryBuild.status, 0);
+              builds.push({
+                id: retryBuild.id,
+                platform,
+                profile,
+                status: retryBuild.status,
+                estimatedTime: retryEta ?? undefined,
+                artifacts: retryBuild.artifacts,
+                error: retryBuild.error,
+              });
+              continue;
+            } catch (retryError: unknown) {
+              const retryMsg = retryError instanceof Error ? retryError.message : String(retryError);
+              builds.push({ id: 'failed', platform, profile, status: 'errored', error: retryMsg });
+              continue;
+            }
+          }
+        }
+      }
+
       builds.push({
         id: 'failed',
         platform,
