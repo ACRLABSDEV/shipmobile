@@ -7,14 +7,20 @@
  * machine-local values that a determined attacker with local access could
  * recover.
  *
- * TODO: Allow user-provided passphrase for stronger key derivation.
  */
 
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { hostname } from 'node:os';
 
 function deriveKey(): Buffer {
-  // Machine-scoped key derivation using hostname + username as salt
+  // Optional stronger mode: user-provided passphrase (recommended for sensitive environments)
+  const passphrase = process.env.SHIPMOBILE_PASSPHRASE?.trim();
+  if (passphrase) {
+    const salt = `shipmobile-passphrase-${hostname()}-${process.env.USER || 'default'}`;
+    return scryptSync(passphrase, salt, 32);
+  }
+
+  // Default machine-scoped key derivation for local convenience
   const salt = `shipmobile-${hostname()}-${process.env.USER || 'default'}`;
   return scryptSync('shipmobile-local-encryption', salt, 32);
 }

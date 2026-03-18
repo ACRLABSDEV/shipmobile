@@ -69,4 +69,16 @@ describe('crypto', () => {
   it('throws on invalid format (missing parts)', () => {
     expect(() => decrypt('not-valid')).toThrow('Invalid encrypted data format');
   });
+
+  it('supports optional SHIPMOBILE_PASSPHRASE mode', () => {
+    const original = process.env.SHIPMOBILE_PASSPHRASE;
+    try {
+      process.env.SHIPMOBILE_PASSPHRASE = 'test-passphrase-123';
+      const encrypted = encrypt('secret');
+      expect(decrypt(encrypted)).toBe('secret');
+    } finally {
+      if (original === undefined) delete process.env.SHIPMOBILE_PASSPHRASE;
+      else process.env.SHIPMOBILE_PASSPHRASE = original;
+    }
+  });
 });
