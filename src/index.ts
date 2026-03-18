@@ -121,13 +121,12 @@ program
   });
 
 async function runSingleExpoLogin() {
-  const { createInterface } = await import('node:readline/promises');
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const token = process.env.EXPO_TOKEN || await rl.question('  Expo access token: ');
-    const result = await login.loginExpo({ token: token.trim() });
-    renderLoginResult(result, 'Expo/EAS');
-  } finally { rl.close(); }
+  const token = process.env.EXPO_TOKEN || await (await import('@inquirer/prompts')).password({
+    message: 'Expo access token:',
+    mask: '*',
+  });
+  const result = await login.loginExpo({ token: token.trim() });
+  renderLoginResult(result, 'Expo/EAS');
 }
 
 async function runSingleAppleLogin() {

@@ -9,6 +9,7 @@ import { createInterface } from 'node:readline/promises';
 import { execSync, spawn } from 'node:child_process';
 import { stdin as input, stdout as output } from 'node:process';
 import { colors, figures } from '../cli/theme.js';
+import { password } from '@inquirer/prompts';
 import { readCredentials, writeCredentials, type CredentialData } from '../utils/config.js';
 import * as login from './login.js';
 
@@ -164,7 +165,10 @@ async function setupExpo(rl: ReturnType<typeof createInterface>, cwd?: string): 
       }
     } else if (choice === '2') {
       console.log();
-      const token = await rl.question(`  ${colors.text('Expo access token:')} `);
+      const token = await password({
+        message: 'Expo access token:',
+        mask: '*',
+      });
       if (token.trim()) {
         const result = await login.loginExpo({ token: token.trim() }, cwd);
         if (result.ok) {
@@ -187,7 +191,10 @@ async function setupExpo(rl: ReturnType<typeof createInterface>, cwd?: string): 
     console.log();
     console.log(`  ${colors.dim('Or connect with an access token:')}`);
     console.log();
-    const token = await rl.question(`  ${colors.text('Expo access token (or press Enter to skip):')} `);
+    const token = await password({
+      message: 'Expo access token (or press Enter to skip):',
+      mask: '*',
+    });
     if (token.trim()) {
       const result = await login.loginExpo({ token: token.trim() }, cwd);
       if (result.ok) {

@@ -2,7 +2,7 @@
  * .shipmobile/ config directory management
  */
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ok, err, type Result } from './result.js';
 import { encrypt, decrypt } from './crypto.js';
@@ -55,7 +55,10 @@ function configDir(cwd: string = process.cwd()): string {
 }
 
 async function ensureDir(cwd?: string): Promise<void> {
-  await mkdir(configDir(cwd), { recursive: true });
+  const dir = configDir(cwd);
+  await mkdir(dir, { recursive: true, mode: 0o700 });
+  // Best-effort hardening for existing dirs created with looser perms
+  try { await chmod(dir, 0o700); } catch { /* ignore */ }
 }
 
 export async function readConfig(cwd?: string): Promise<Result<ShipMobileConfig>> {
@@ -105,6 +108,7 @@ export async function writeCredentials(
     await writeFile(
       join(configDir(cwd), CREDENTIALS_FILE),
       JSON.stringify({ encrypted, _note: 'Encrypted at rest. Do not edit manually.' }, null, 2),
+      { mode: 0o600 },
     );
     return ok(undefined);
   } catch (e) {
