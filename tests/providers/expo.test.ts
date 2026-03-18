@@ -70,6 +70,25 @@ describe('Expo Provider', () => {
       expect(result.error.code).toBe('EXPO_NETWORK_ERROR');
     });
 
+    it('supports nested data payload shape', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: {
+            username: 'nesteduser',
+            email: 'nested@example.com',
+            accounts: [{ plan: 'pro' }],
+          },
+        }),
+      }) as unknown as typeof fetch;
+
+      const result = await validateToken('token');
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.data.username).toBe('nesteduser');
+      expect(result.data.plan).toBe('pro');
+    });
+
     it('handles missing username gracefully', async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,

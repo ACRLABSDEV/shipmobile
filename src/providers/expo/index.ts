@@ -30,13 +30,25 @@ export async function validateToken(token: string): Promise<Result<ExpoAccount>>
       return err('EXPO_AUTH_ERROR', `Expo API returned ${res.status}: ${res.statusText}`);
     }
 
-    const data = await res.json() as { username?: string; email?: string; accounts?: Array<{ plan?: string }> };
-    const username = data.username || 'unknown';
-    const plan = data.accounts?.[0]?.plan || 'free';
+    const data = await res.json() as {
+      username?: string;
+      email?: string;
+      accounts?: Array<{ plan?: string }>;
+      data?: {
+        username?: string;
+        email?: string;
+        accounts?: Array<{ plan?: string }>;
+      };
+    };
+
+    // Expo responses vary by endpoint/version; support both root and nested `data`
+    const payload = data.data ?? data;
+    const username = payload.username || 'unknown';
+    const plan = payload.accounts?.[0]?.plan || 'free';
 
     return ok({
       username,
-      email: data.email,
+      email: payload.email,
       plan,
       validated: true,
     });
