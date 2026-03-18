@@ -66,7 +66,9 @@ describe('status command', () => {
   });
 
   it('should return error when no builds exist', async () => {
-    const mockEAS = createMockEAS();
+    const mockEAS = createMockEAS({
+      listBuilds: vi.fn(async () => []),
+    });
     setEASService(mockEAS);
 
     const result = await execute({ projectPath: tmpDir });
@@ -74,6 +76,36 @@ describe('status command', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.code).toBe('NO_BUILDS');
+  });
+
+  it('should fallback to EAS list when local cache is missing', async () => {
+    const mockEAS = createMockEAS({
+      listBuilds: vi.fn(async (): Promise<EASBuildInfo[]> => [
+        {
+          id: 'remote-latest-1',
+          platform: 'ios',
+          status: 'building',
+          profile: 'production',
+          createdAt: new Date(Date.now() - 120000).toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ]),
+      getBuildStatus: vi.fn(async (id): Promise<EASBuildInfo> => ({
+        id,
+        platform: 'ios',
+        status: 'building',
+        profile: 'production',
+        createdAt: new Date(Date.now() - 120000).toISOString(),
+        updatedAt: new Date().toISOString(),
+      })),
+    });
+    setEASService(mockEAS);
+
+    const result = await execute({ projectPath: tmpDir });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.builds[0]?.id).toBe('remote-latest-1');
   });
 
   it('should return build status for latest builds', async () => {

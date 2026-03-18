@@ -60,7 +60,9 @@ describe('preview command', () => {
   });
 
   it('should return error when no builds exist', async () => {
-    const mockEAS = createMockEAS();
+    const mockEAS = createMockEAS({
+      listBuilds: vi.fn(async () => []),
+    });
     setEASService(mockEAS);
 
     const result = await execute({ projectPath: tmpDir });
@@ -68,6 +70,42 @@ describe('preview command', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.code).toBe('NO_BUILDS');
+  });
+
+  it('should fallback to EAS finished builds when local cache is missing', async () => {
+    const mockEAS = createMockEAS({
+      listBuilds: vi.fn(async (): Promise<EASBuildInfo[]> => [
+        {
+          id: 'remote-finished-ios',
+          platform: 'ios',
+          status: 'finished',
+          profile: 'production',
+          createdAt: new Date(Date.now() - 120000).toISOString(),
+          updatedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+        },
+      ]),
+      getBuildStatus: vi.fn(async (id): Promise<EASBuildInfo> => ({
+        id,
+        platform: 'ios',
+        status: 'finished',
+        profile: 'production',
+        createdAt: new Date(Date.now() - 120000).toISOString(),
+        updatedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        artifacts: {
+          buildUrl: `https://expo.dev/builds/${id}`,
+          applicationArchiveUrl: `https://expo.dev/artifacts/${id}.ipa`,
+        },
+      })),
+    });
+    setEASService(mockEAS);
+
+    const result = await execute({ projectPath: tmpDir });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.previews.some((p) => p.platform === 'ios')).toBe(true);
   });
 
   it('should generate iOS preview links', async () => {

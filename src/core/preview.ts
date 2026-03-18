@@ -114,19 +114,47 @@ export async function execute(input: PreviewInput = {}): Promise<Result<PreviewR
   } else {
     const latest = await getLatestBuildIds(projectDir);
     if (Object.keys(latest).length === 0) {
-      return err(
-        'NO_BUILDS',
-        'No completed builds found.',
-        'critical',
-        'Run `shipmobile build` first, then `shipmobile preview`.',
-      );
-    }
-    if (input.platform) {
-      const id = latest[input.platform];
-      if (id) buildIds.push(id);
-      else return err('NO_BUILD_FOR_PLATFORM', `No build found for ${input.platform}.`);
+      // Fallback: query EAS directly for recent finished builds when local cache is missing
+      try {
+        const recent = await eas.listBuilds(projectDir, { platform: input.platform, limit: 10 });
+        const finished = recent.filter((b) => b.status === 'finished');
+        if (finished.length === 0) {
+          return err(
+            'NO_BUILDS',
+            'No completed builds found.',
+            'critical',
+            'Run `shipmobile build` first, then `shipmobile preview`.',
+          );
+        }
+
+        if (input.platform) {
+          const match = finished.find((b) => b.platform === input.platform);
+          if (!match) return err('NO_BUILD_FOR_PLATFORM', `No build found for ${input.platform}.`);
+          buildIds.push(match.id);
+        } else {
+          // One latest finished build per platform
+          const byPlatform = new Map<BuildPlatform, string>();
+          for (const b of finished) {
+            if (!byPlatform.has(b.platform)) byPlatform.set(b.platform, b.id);
+          }
+          buildIds.push(...Array.from(byPlatform.values()));
+        }
+      } catch {
+        return err(
+          'NO_BUILDS',
+          'No completed builds found.',
+          'critical',
+          'Run `shipmobile build` first, then `shipmobile preview`.',
+        );
+      }
     } else {
-      buildIds.push(...Object.values(latest));
+      if (input.platform) {
+        const id = latest[input.platform];
+        if (id) buildIds.push(id);
+        else return err('NO_BUILD_FOR_PLATFORM', `No build found for ${input.platform}.`);
+      } else {
+        buildIds.push(...Object.values(latest));
+      }
     }
   }
 

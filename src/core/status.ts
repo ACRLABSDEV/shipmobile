@@ -120,14 +120,33 @@ export async function execute(input: StatusInput = {}): Promise<Result<StatusRes
     // Get latest builds from cache
     const latest = await getLatestBuildIds(projectDir);
     if (Object.keys(latest).length === 0) {
-      return err(
-        'NO_BUILDS',
-        'No builds found. Run `shipmobile build` first.',
-        'info',
-        'Start a build with `shipmobile build`',
-      );
+      // Fallback: fetch recent builds directly from EAS when cache is missing/stale
+      try {
+        const recent = await eas.listBuilds(projectDir, { platform: input.platform, limit: 5 });
+        if (recent.length === 0) {
+          return err(
+            'NO_BUILDS',
+            'No builds found. Run `shipmobile build` first.',
+            'info',
+            'Start a build with `shipmobile build`',
+          );
+        }
+        const ids = Array.from(new Set(recent.map((b) => b.id))).filter(Boolean);
+        buildIds.push(...ids);
+      } catch {
+        return err(
+          'NO_BUILDS',
+          'No builds found. Run `shipmobile build` first.',
+          'info',
+          'Start a build with `shipmobile build`',
+        );
+      }
+    } else {
+      const ids = input.platform
+        ? [latest[input.platform]].filter(Boolean) as string[]
+        : Object.values(latest);
+      buildIds.push(...ids);
     }
-    buildIds.push(...Object.values(latest));
   }
 
   const builds: BuildStatusInfo[] = [];

@@ -157,6 +157,7 @@ export class RealEASService implements EASService {
       '--platform', request.platform,
       '--profile', request.profile,
       '--json',
+      '--no-wait',
     ];
 
     if (request.nonInteractive !== false) {
